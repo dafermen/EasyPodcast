@@ -1,0 +1,141 @@
+// @vitest-environment jsdom
+import { afterEach, describe, it, expect, vi } from "vitest";
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { App } from "./main";
+const caps = {
+  render_ready: true,
+  ffmpeg: true,
+  ffprobe: true,
+  h264: true,
+  aac: true,
+  font: true,
+  filters: { ass: true },
+  image_provider: false,
+  limits: {
+    audio_bytes: 1073741824,
+    srt_bytes: 5242880,
+    image_bytes: 20971520,
+    duration_seconds: 7200,
+    queue: 2,
+  },
+};
+const design = {
+  title: "Mi episodio",
+  description: "",
+  image_style: "illustration",
+  atmosphere: "Estudio",
+  visualizer: "waveform",
+  color: "#5EEAD4",
+  sensitivity: 1,
+  wave_y: 0.52,
+  wave_height: 0.16,
+  font_size: 48,
+  subtitle_color: "#FFFFFF",
+  outline: 3,
+  subtitle_margin: 80,
+  subtitle_width: 0.85,
+  max_lines: 2,
+  crf: 21,
+  preset: "veryfast",
+  trim_subtitles: false,
+};
+const job = {
+  id: "test-job",
+  token: "test-token",
+  state: "ready",
+  phase: "Listo",
+  progress: null,
+  error: null,
+  metadata: { duration: 26, audio_tracks: 1, codec: "pcm_s16le" },
+  warnings: [],
+  config: design,
+  background_approved: false,
+  preview_approved: false,
+  background_mode: "local",
+  artifacts: ["background"],
+  expires_at: "2026-11-03T00:00:00Z",
+};
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+describe("episode assistant", () => {
+  it("uploads files, explains optional IA and opens design", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) => ({
+        ok: true,
+        json: async () => (url.endsWith("/capabilities") ? caps : job),
+      })),
+    );
+    render(<App />);
+    const user = userEvent.setup({ applyAccept: false });
+    await screen.findByText("Motor audiovisual listo");
+    expect(
+      (screen.getByRole("button", { name: "02 Diseño" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    await user.upload(
+      screen.getByLabelText(/Audio del episodio/),
+      new File(["synthetic"], "demo.wav", { type: "audio/wav" }),
+    );
+    await user.upload(
+      screen.getByLabelText(/Subtítulos SRT/),
+      new File(["synthetic"], "demo.srt", { type: "application/x-subrip" }),
+    );
+    expect(
+      (screen.getByLabelText(/Audio del episodio/) as HTMLInputElement).files
+        ?.length,
+    ).toBe(1);
+    expect(
+      (screen.getByLabelText(/Subtítulos SRT/) as HTMLInputElement).files
+        ?.length,
+    ).toBe(1);
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Crear episodio" }).closest("form")!,
+    );
+    await screen.findByRole("heading", { name: "Diseño" });
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Generar imagen con IA",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(screen.getByText(/falta configurar el proveedor/)).toBeTruthy();
+    await user.type(screen.getByLabelText("Título", { exact: true }), " nuevo");
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Guardar diseño",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false),
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Aprobar fondo y continuar →",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+  it("announces connection failures", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("Backend no disponible")),
+    );
+    render(<App />);
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Backend no disponible",
+    );
+  });
+});
