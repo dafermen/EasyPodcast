@@ -38,3 +38,7 @@ with httpx.Client(base_url="http://127.0.0.1:8000", headers={"Origin":"http://12
 ```
 
 Design y PreviewRequest exactos en OpenAPI y `app/models.py`; rechazan campos extra, NaN, colores arbitrarios y presets no permitidos. Config JSON no contiene claves, archivos, rutas ni tokens; importarlo no recupera medios ni garantiza repetir una imagen IA.
+
+## Tipografía y logo (0.3.0)
+
+Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.

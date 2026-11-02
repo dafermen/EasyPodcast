@@ -17,3 +17,5 @@ React, Vite, FastAPI, Pillow, Pydantic, OpenAI SDK y demás dependencias conserv
 ## Transcripción opcional
 
 Transformers.js (@huggingface/transformers), Apache-2.0; ONNX Runtime y dependencias conservan sus licencias instaladas. Modelos Xenova/whisper-tiny y Xenova/whisper-base: las fichas oficiales declaran Apache-2.0. No se incluyen pesos en Git. Se descargan o reutilizan localmente en caché. Revisar sus fichas/licencias antes de redistribuir modelos: https://huggingface.co/Xenova/whisper-tiny y https://huggingface.co/Xenova/whisper-base .
+
+Se incluyen además DejaVuSerif.ttf y DejaVuSansMono.ttf, sin modificar, del mismo origen matplotlib v3.10.8. Conservan la licencia DejaVu/Bitstream íntegra ya incluida en assets/fonts/LICENSE-DejaVu.txt.

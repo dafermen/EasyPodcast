@@ -18,3 +18,10 @@
 - Documentación Windows/macOS, guía didáctica y pruebas sintéticas.
 
 Consultar IMPLEMENTATION_STATUS para evidencia y pendientes; este registro no certifica pruebas en ambos OS.
+
+## 0.3.0 · 2026-11-02
+
+- Fuentes y tamaños independientes para título/subtítulos.
+- Tres familias DejaVu incluidas y vista de composición con fuentes locales.
+- Seis posiciones de logo y margen configurable; logo visible en composición.
+- 56 pruebas backend y 9 frontend; renders y recorrido de navegador verificados.

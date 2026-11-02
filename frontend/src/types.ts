@@ -9,6 +9,17 @@ export interface Design {
   wave_y: number;
   wave_height: number;
   font_size: number;
+  subtitle_font: "sans" | "serif" | "mono";
+  title_font: "sans" | "serif" | "mono";
+  title_font_size: number;
+  logo_position:
+    | "top-left"
+    | "top-right"
+    | "middle-left"
+    | "middle-right"
+    | "bottom-left"
+    | "bottom-right";
+  logo_margin: number;
   subtitle_color: string;
   outline: number;
   subtitle_margin: number;

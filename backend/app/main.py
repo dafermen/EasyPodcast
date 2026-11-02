@@ -27,7 +27,7 @@ async def lifespan(app):
     await asyncio.to_thread(store.close)
 
 
-app = FastAPI(title="EasyPodcast", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.3.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -69,7 +69,7 @@ async def invalid(request, exc):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.2.0"}
+    return {"status": "ok", "version": "0.3.0"}
 
 
 @app.get("/api/capabilities")
@@ -169,6 +169,8 @@ async def create_uploaded_job(request, subtitle_mode, options):
             await asyncio.to_thread(normalize_image, path / "logo.bin", path / "logo.png", True)
             (path / "logo.bin").unlink()
         job = make_job(jid, path, meta, cues, warnings)
+        if "logo" in files:
+            job.artifacts.add("logo")
         job.subtitle_source = subtitle_mode
         job.subtitles_approved = subtitle_mode == "upload"
         job.transcription_options = options
@@ -308,6 +310,7 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
                 },
             )
         mapping = {
+            "logo": ("logo.png", "image/png"),
             "subtitles": (
                 "generated.srt" if job.subtitle_source == "generate" else "original.srt",
                 "application/x-subrip",
@@ -394,6 +397,17 @@ def approve_subtitles(job=Depends(get_job)):
             raise HTTPException(409, "Aún no hay subtítulos para revisar.")
         job.subtitles_approved = True
         return job.public()
+
+
+@app.get("/api/fonts/{key}")
+def font_file(key: str):
+    from .fonts import FONTS, font_path
+
+    if key not in FONTS:
+        raise HTTPException(404, "Fuente no disponible.")
+    return FileResponse(
+        font_path(key), media_type="font/ttf", headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 
 frontend = ROOT / "frontend" / "dist"

@@ -1,3 +1,11 @@
+# Estado actual · 0.3.0
+
+Tipografía y logo: fuente y tamaño independientes para título/subtítulos, tres familias DejaVu incluidas, seis posiciones y margen de logo. Vista previa con fuentes locales y logo; ASS/FFmpeg usan la misma configuración. Compatibilidad con JSON anteriores mediante defaults. Ver docs/DESIGN_CONTROLS.md.
+
+Verificado en Windows: 56 pruebas backend y 9 frontend pasaron; renders reales con Serif/Mono, tamaño elegido y logos en esquinas opuestas, rutas de fuentes permitidas y límites. Navegador real: cambios de fuente, tamaños y posición, guardar y renderizar prueba con audio sintético y recursos generados. Capturas typography-controls.png y typography-render.png. macOS nativo pendiente.
+
+---
+
 # Estado actual · 0.2.0
 
 ## 0.2.0 · Generación local de subtítulos y resaltado

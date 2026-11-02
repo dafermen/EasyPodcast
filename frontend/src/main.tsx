@@ -4,6 +4,11 @@ import { api, artifactUrl, isActive } from "./api";
 import type { Capabilities, Design, Job } from "./types";
 import { text } from "./text";
 import "./style.css";
+import {
+  TypographyControls,
+  fontFamilies,
+  logoStyle,
+} from "./TypographyControls";
 import { SubtitleReview } from "./SubtitleReview";
 
 export function App() {
@@ -400,6 +405,12 @@ export function App() {
                     />
                   </label>
                 </div>
+                <TypographyControls
+                  design={design}
+                  disabled={disabled}
+                  hasLogo={job.artifacts.includes("logo")}
+                  change={change}
+                />
                 {job.word_timestamps ? (
                   <div className="pair">
                     <label className="check">
@@ -464,19 +475,6 @@ export function App() {
                     </label>
                   </div>
                   <div className="pair">
-                    <label>
-                      Tamaño de letra
-                      <input
-                        type="number"
-                        min="28"
-                        max="72"
-                        value={design.font_size}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("font_size", Number(e.target.value))
-                        }
-                      />
-                    </label>
                     <label>
                       Color subtítulos
                       <input
@@ -752,11 +750,36 @@ export function App() {
                         src={artifactUrl(job, "background", false, revision)}
                         alt="Fondo actual del episodio"
                       />
-                      <div className="canvas-title">{design?.title}</div>
+                      <div
+                        className="canvas-title"
+                        style={{
+                          fontFamily:
+                            fontFamilies[design?.title_font ?? "sans"],
+                          fontSize: `${(design?.title_font_size ?? 64) / 19.2}cqw`,
+                        }}
+                      >
+                        {design?.title}
+                      </div>
+                      {design && job.artifacts.includes("logo") && (
+                        <img
+                          className="canvas-logo"
+                          src={artifactUrl(job, "logo", false, revision)}
+                          alt="Logo del episodio"
+                          style={logoStyle(design)}
+                        />
+                      )}
                       <div className="safe-area">
                         Zona del visualizador · se renderiza con tu audio
                       </div>
-                      <div className="sample-caption">
+                      <div
+                        className="sample-caption"
+                        style={{
+                          fontFamily:
+                            fontFamilies[design?.subtitle_font ?? "sans"],
+                          fontSize: `${(design?.font_size ?? 48) / 19.2}cqw`,
+                          bottom: `${(design?.subtitle_margin ?? 80) / 10.8}%`,
+                        }}
+                      >
                         Vista de composición aproximada
                       </div>
                     </>
@@ -876,7 +899,7 @@ export function App() {
       </main>
       <footer>
         Hecho para escuchar. Diseñado para compartir.
-        <span>EasyPodcast · 0.2.0</span>
+        <span>EasyPodcast · 0.3.0</span>
       </footer>
     </div>
   );

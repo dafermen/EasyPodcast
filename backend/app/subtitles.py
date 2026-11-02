@@ -1,9 +1,10 @@
 import html
 import re
-import textwrap
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from .fonts import FONTS, font_path
 
 
 class Word(BaseModel):
@@ -91,14 +92,10 @@ def escape_ass(text: str) -> str:
     return text.replace("\\", "\\\u2060").replace("{", r"\{").replace("}", r"\}").replace("\n", r"\N")
 
 
-def wrap_caption(text, design):
-    from pathlib import Path
-
+def wrap_text(text, font_key, size, width):
     from PIL import ImageFont
 
-    font_path = Path(__file__).resolve().parents[2] / "assets" / "fonts" / "DejaVuSans.ttf"
-    font = ImageFont.truetype(str(font_path), design.font_size)
-    width = 1920 * design.subtitle_width - 40
+    font = ImageFont.truetype(str(font_path(font_key)), size)
     output = []
     for paragraph in text.splitlines():
         remaining = paragraph
@@ -112,6 +109,11 @@ def wrap_caption(text, design):
             output.append(remaining[:split])
             remaining = remaining[split:].lstrip(" ")
         output.append(remaining)
+    return output
+
+
+def wrap_caption(text, design):
+    output = wrap_text(text, design.subtitle_font, design.font_size, 1920 * design.subtitle_width - 40)
     if len(output) > design.max_lines:
         raise ValueError(
             f"Un subtítulo requiere {len(output)} líneas. Acorta el SRT, reduce la letra o permite tres líneas."
@@ -169,14 +171,17 @@ PlayResY: 1080
 WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,DejaVu Sans,{design.font_size},{color},&H000000FF,&H00101522,&H80000000,0,0,0,0,100,100,0,0,1,{design.outline},1,2,{margin},{margin},{design.subtitle_margin},1
-Style: Title,DejaVu Sans,64,&H00FFFFFF,&H000000FF,&H00101522,&H80000000,-1,0,0,0,100,100,0,0,1,3,0,8,120,120,100,1
+Style: Default,{FONTS[design.subtitle_font][0]},{design.font_size},{color},&H000000FF,&H00101522,&H80000000,0,0,0,0,100,100,0,0,1,{design.outline},1,2,{margin},{margin},{design.subtitle_margin},1
+Style: Title,{FONTS[design.title_font][0]},{design.title_font_size},&H00FFFFFF,&H000000FF,&H00101522,&H80000000,-1,0,0,0,100,100,0,0,1,3,0,8,120,120,100,1
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events = []
     if design.title:
-        title = "\n".join(textwrap.wrap(design.title, width=44))
+        lines = wrap_text(design.title, design.title_font, design.title_font_size, 1600)
+        if len(lines) > 3 or 100 + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
+            raise ValueError("El título no cabe sobre el visualizador: reduce su tamaño o acorta el texto.")
+        title = "\n".join(lines)
         events.append(f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{escape_ass(title)}")
     for cue in cues:
         caption = wrap_caption(cue.text, design)

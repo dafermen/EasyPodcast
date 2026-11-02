@@ -87,3 +87,7 @@ La aplicación está preparada para loopback, no para exposición pública. La l
 ## Generar subtítulos desde audio
 
 En Archivos elige «Generar desde el audio (local)», idioma y Tiny/Base. El SRT deja de ser obligatorio. Revisa el texto generado antes de continuar. En Diseño puedes activar/desactivar el resaltado de palabra y elegir color (amarillo inicial). El audio permanece local; primera vez descarga modelo de Hugging Face, caché persistente fuera del repositorio. No se necesita API ni se cobra por llamadas. Editar/reimportar el SRT elimina los tiempos por palabra; no se inventan para SRT propios. Guía completa: [TRANSCRIPTION](docs/TRANSCRIPTION.md).
+
+## Tipografía y logo (0.3.0)
+
+Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.

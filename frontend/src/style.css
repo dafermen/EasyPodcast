@@ -1,3 +1,42 @@
+@font-face {
+  font-family: EpisodeSans;
+  src: url("/api/fonts/sans") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeSerif;
+  src: url("/api/fonts/serif") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeMono;
+  src: url("/api/fonts/mono") format("truetype");
+  font-display: swap;
+}
+.typography-controls {
+  border: 1px solid #d8ded7;
+  border-radius: 9px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.typography-controls legend {
+  font-size: 13px;
+  font-weight: 650;
+  padding: 0 6px;
+}
+.canvas {
+  container-type: inline-size;
+}
+.canvas-title,
+.sample-caption {
+  z-index: 2;
+}
+.canvas-logo {
+  z-index: 1;
+}
 :root {
   font-family:
     Inter,

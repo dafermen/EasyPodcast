@@ -50,3 +50,7 @@ Verificación Windows: 44 backend, 7 frontend y 2 Node pasaron; build, formato, 
 Servicio activo comprobado: /api/health versión 0.2.0 y transcription.available=true. Capturas docs/screenshots/audio-only-flow.png, word-highlight-controls.png y word-highlight.png. Guía docs/TRANSCRIPTION.md.
 
 Pendientes: macOS nativo, Whisper Base real y calidad/rendimiento en voz humana larga o bilingüe. El benchmark previo de 30 min mide render, no transcripción. Los tiempos por palabra son estimados; primera descarga de modelos y uso offline sin caché no se comprobaron (se reutilizó caché). No se afirma precisión perfecta ni identificación de hablantes.
+
+## Tipografía y logo (0.3.0)
+
+Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.

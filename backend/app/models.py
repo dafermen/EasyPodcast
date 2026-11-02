@@ -15,6 +15,13 @@ class Design(BaseModel):
     wave_y: float = Field(0.52, ge=0.3, le=0.65)
     wave_height: float = Field(0.16, ge=0.06, le=0.22)
     font_size: int = Field(48, ge=28, le=72)
+    subtitle_font: Literal["sans", "serif", "mono"] = "sans"
+    title_font: Literal["sans", "serif", "mono"] = "sans"
+    title_font_size: int = Field(64, ge=28, le=110)
+    logo_position: Literal[
+        "top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"
+    ] = "top-right"
+    logo_margin: int = Field(40, ge=20, le=160)
     subtitle_color: str = Field("#FFFFFF", pattern=r"^#[0-9a-fA-F]{6}$")
     outline: int = Field(3, ge=1, le=6)
     subtitle_margin: int = Field(80, ge=40, le=180)

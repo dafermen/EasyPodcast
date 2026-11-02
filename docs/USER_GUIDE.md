@@ -17,3 +17,7 @@ Los subtítulos se ajustan por ancho con la fuente incluida; por defecto se admi
 ## Alternativa: subir solo audio
 
 En Archivos selecciona Generar desde el audio (local), idioma y Tiny/Base. Sube audio sin SRT. Espera la transcripción, revisa/descarga el SRT y pulsa Aprobar subtítulos y diseñar. En Diseño, Resaltar la palabra actual usa amarillo por defecto y permite otro color. Con SRT propio o editado se usan subtítulos normales. Revisa la prueba porque los tiempos por palabra son estimados. Ver TRANSCRIPTION.md.
+
+## Tipografía y logo (0.3.0)
+
+Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.

@@ -11,10 +11,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageOps
 
 from .config import settings
+from .fonts import FONTS, font_path, logo_position
 from .subtitles import clip_cues, make_ass
 
 ROOT = Path(__file__).resolve().parents[2]
-FONTS = ROOT / "assets" / "fonts"
 
 
 def run(args, timeout=30):
@@ -39,7 +39,8 @@ def capabilities():
         "filters": {},
         "h264": False,
         "aac": False,
-        "font": (FONTS / "DejaVuSans.ttf").is_file(),
+        "font": all(font_path(key).is_file() for key in FONTS),
+        "fonts": [{"id": key, "name": value[0]} for key, value in FONTS.items()],
         "image_provider": bool(settings.openai_api_key and settings.image_model),
         "transcription": {
             "available": available(),
@@ -177,7 +178,8 @@ def render(job, design, start, duration, output, update):
     # All paths in filters are controlled relative filenames: Windows drive syntax never enters the graph.
     fonts = job.path / "fonts"
     fonts.mkdir(exist_ok=True)
-    shutil.copyfile(FONTS / "DejaVuSans.ttf", fonts / "DejaVuSans.ttf")
+    for key, (_, filename) in FONTS.items():
+        shutil.copyfile(font_path(key), fonts / filename)
     size = f"1600x{round(1080 * design.wave_height) // 2 * 2}"
     color = "0x" + design.color[1:]
     visual = (
@@ -208,7 +210,8 @@ def render(job, design, start, duration, output, update):
     ]
     if (job.path / "logo.png").exists():
         inputs += ["-i", "logo.png"]
-        graph += "[base][2:v]overlay=W-w-60:40[branded];[branded]"
+        x, y = logo_position(design)
+        graph += f"[base][2:v]overlay={x}:{y}[branded];[branded]"
     else:
         graph += "[base]"
     graph += "ass=subtitles.ass:fontsdir=fonts,format=yuv420p[v]"
