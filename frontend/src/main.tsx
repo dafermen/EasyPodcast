@@ -4,6 +4,7 @@ import { api, artifactUrl, isActive } from "./api";
 import type { Capabilities, Design, Job } from "./types";
 import { text } from "./text";
 import "./style.css";
+import { SubtitleReview } from "./SubtitleReview";
 
 export function App() {
   const [caps, setCaps] = useState<Capabilities | null>(null);
@@ -16,6 +17,11 @@ export function App() {
   const [start, setStart] = useState(0);
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [subtitleMode, setSubtitleMode] = useState<"upload" | "generate">(
+    "upload",
+  );
+  const [language, setLanguage] = useState("en");
+  const [transcriptionModel, setTranscriptionModel] = useState("tiny");
   const heading = useRef<HTMLHeadingElement>(null);
   const active = isActive(job);
 
@@ -71,7 +77,7 @@ export function App() {
       if (!(data.get(key) as File)?.size) data.delete(key);
     await perform(async () => {
       const result = await api<Job & { token: string }>(
-        "/jobs",
+        `/jobs?subtitle_mode=${subtitleMode}&language=${language}&model=${transcriptionModel}`,
         undefined,
         "POST",
         data,
@@ -80,7 +86,7 @@ export function App() {
       setJob(result);
       setDesign(result.config);
       setDirty(false);
-      setStep(1);
+      setStep(subtitleMode === "generate" ? 0 : 1);
     });
   }
   function change<K extends keyof Design>(key: K, value: Design[K]) {
@@ -148,7 +154,7 @@ export function App() {
               key={label}
               className={index === step ? "step current" : "step"}
               aria-current={index === step ? "step" : undefined}
-              disabled={index > 0 && !job}
+              disabled={index > 0 && (!job || job.subtitles_approved === false)}
               onClick={() => setStep(index)}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
@@ -169,12 +175,79 @@ export function App() {
                 {text.steps[step]}
               </h2>
             </div>
-            {step === 0 && (
+            {step === 0 && !job && (
               <form onSubmit={upload}>
                 <p>
-                  Empieza con tu audio y los subtítulos sincronizados. Puedes
-                  añadir una imagen y un logo ahora.
+                  Sube tu audio y elige generar subtítulos localmente o cargar
+                  un SRT existente.
                 </p>
+                <label>
+                  Origen de los subtítulos
+                  <select
+                    value={subtitleMode}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setSubtitleMode(e.target.value as "upload" | "generate")
+                    }
+                  >
+                    <option value="upload">Ya tengo un archivo SRT</option>
+                    <option
+                      value="generate"
+                      disabled={!caps?.transcription?.available}
+                    >
+                      Generar desde el audio (local)
+                    </option>
+                  </select>
+                </label>
+                {!caps?.transcription?.available && (
+                  <p className="note">
+                    Motor local no instalado: ejecuta npm ci dentro de la
+                    carpeta transcription y reinicia EasyPodcast.
+                  </p>
+                )}
+                {subtitleMode === "generate" && (
+                  <>
+                    <div className="pair">
+                      <label>
+                        Idioma del audio
+                        <select
+                          value={language}
+                          disabled={busy}
+                          onChange={(e) => setLanguage(e.target.value)}
+                        >
+                          <option value="en">Inglés</option>
+                          <option value="es">Español</option>
+                          <option value="auto">Detectar automáticamente</option>
+                          <option value="pt">Portugués</option>
+                          <option value="fr">Francés</option>
+                          <option value="de">Alemán</option>
+                          <option value="it">Italiano</option>
+                        </select>
+                      </label>
+                      <label>
+                        Modelo local
+                        <select
+                          value={transcriptionModel}
+                          disabled={busy}
+                          onChange={(e) =>
+                            setTranscriptionModel(e.target.value)
+                          }
+                        >
+                          <option value="tiny">Tiny · rápido</option>
+                          <option value="base">
+                            Base · más preciso, más lento
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                    <p className="note">
+                      Audio local, sin cargos de API. La primera vez se descarga
+                      el modelo desde Hugging Face; se conserva en caché. Los
+                      tiempos por palabra son estimados y debes revisar la
+                      prueba.
+                    </p>
+                  </>
+                )}
                 <label className="file-field">
                   Audio del episodio{" "}
                   <small>
@@ -192,16 +265,18 @@ export function App() {
                     disabled={busy || !!job}
                   />
                 </label>
-                <label className="file-field">
-                  Subtítulos <small>SRT en UTF-8 · hasta 5 MiB</small>
-                  <input
-                    name="srt"
-                    type="file"
-                    accept=".srt"
-                    required
-                    disabled={busy || !!job}
-                  />
-                </label>
+                {subtitleMode === "upload" && (
+                  <label className="file-field">
+                    Subtítulos <small>SRT en UTF-8 · hasta 5 MiB</small>
+                    <input
+                      name="srt"
+                      type="file"
+                      accept=".srt"
+                      required
+                      disabled={busy || !!job}
+                    />
+                  </label>
+                )}
                 <label>
                   Fondo propio <small>Opcional · PNG o JPEG</small>
                   <input
@@ -228,6 +303,14 @@ export function App() {
                 )}
                 <p className="note">{text.privacy}</p>
               </form>
+            )}
+            {step === 0 && job && (
+              <SubtitleReview
+                job={job}
+                token={token}
+                onChange={setJob}
+                onContinue={() => setStep(1)}
+              />
             )}
             {job && design && step === 1 && (
               <div className="fields">
@@ -317,6 +400,37 @@ export function App() {
                     />
                   </label>
                 </div>
+                {job.word_timestamps ? (
+                  <div className="pair">
+                    <label className="check">
+                      <input
+                        type="checkbox"
+                        checked={design.highlight_words}
+                        disabled={disabled}
+                        onChange={(e) =>
+                          change("highlight_words", e.target.checked)
+                        }
+                      />
+                      Resaltar la palabra actual
+                    </label>
+                    <label>
+                      Color de resaltado
+                      <input
+                        type="color"
+                        value={design.highlight_color}
+                        disabled={disabled}
+                        onChange={(e) =>
+                          change("highlight_color", e.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <p className="note">
+                    Resaltado por palabra disponible con subtítulos generados
+                    desde el audio. El SRT propio conserva subtítulos normales.
+                  </p>
+                )}
                 <details>
                   <summary>Composición y subtítulos</summary>
                   <div className="pair">
@@ -762,7 +876,7 @@ export function App() {
       </main>
       <footer>
         Hecho para escuchar. Diseñado para compartir.
-        <span>EasyPodcast · 0.1.0</span>
+        <span>EasyPodcast · 0.2.0</span>
       </footer>
     </div>
   );

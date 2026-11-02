@@ -3,12 +3,29 @@ import re
 import textwrap
 from dataclasses import dataclass
 
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class Word(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    start: float = Field(ge=0)
+    end: float = Field(gt=0)
+    text: str = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def valid_interval(self):
+        if self.end <= self.start or not self.text.strip():
+            raise ValueError("Intervalo de palabra inválido.")
+        return self
+
 
 @dataclass(frozen=True)
 class Cue:
     start: float
     end: float
     text: str
+    words: tuple[Word, ...] = ()
+    word_offset: int = 0
 
 
 TIME = r"(\d{2,}):([0-5]\d):([0-5]\d)[,.](\d{3})"
@@ -51,7 +68,17 @@ def parse_srt(data: bytes) -> tuple[list[Cue], list[str]]:
 
 def clip_cues(cues: list[Cue], start: float, duration: float) -> list[Cue]:
     return [
-        Cue(max(c.start, start) - start, min(c.end, start + duration) - start, c.text)
+        Cue(
+            max(c.start, start) - start,
+            min(c.end, start + duration) - start,
+            c.text,
+            tuple(
+                Word(start=max(w.start, start) - start, end=min(w.end, start + duration) - start, text=w.text)
+                for w in c.words
+                if w.end > start and w.start < start + duration
+            ),
+            c.word_offset + sum(len("".join(w.text.split())) for w in c.words if w.end <= start),
+        )
         for c in cues
         if c.end > start and c.start < start + duration
     ]
@@ -97,6 +124,40 @@ def ass_time(seconds: float) -> str:
     return f"{cs // 360000}:{cs // 6000 % 60:02}:{cs // 100 % 60:02}.{cs % 100:02}"
 
 
+def render_srt(cues):
+    def stamp(seconds):
+        ms = round(seconds * 1000)
+        return f"{ms // 3600000:02}:{ms // 60000 % 60:02}:{ms // 1000 % 60:02},{ms % 1000:03}"
+
+    return (
+        "\n\n".join(f"{i}\n{stamp(c.start)} --> {stamp(c.end)}\n{c.text}" for i, c in enumerate(cues, 1))
+        + "\n"
+    )
+
+
+def ass_color(value):
+    value = value.lstrip("#")
+    return "&H" + value[4:6] + value[2:4] + value[0:2] + "&"
+
+
+def highlighted_caption(caption, words, active, design, offset=0):
+    # Map by visible characters so line breaks do not shift the active word.
+    low = offset + sum(len("".join(w.text.split())) for w in words[:active])
+    high = low + len("".join(words[active].text.split()))
+    result = []
+    position = 0
+    colored = False
+    for char in caption:
+        want = low <= position < high
+        if not char.isspace() and want != colored:
+            result.append(r"{\c" + ass_color(design.highlight_color if want else design.subtitle_color) + "}")
+            colored = want
+        result.append(escape_ass(char))
+        if not char.isspace():
+            position += 1
+    return "".join(result)
+
+
 def make_ass(cues, design, duration: float) -> str:
     color = design.subtitle_color.lstrip("#")
     color = "&H00" + color[4:6] + color[2:4] + color[0:2]
@@ -119,7 +180,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         events.append(f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{escape_ass(title)}")
     for cue in cues:
         caption = wrap_caption(cue.text, design)
-        events.append(
-            f"Dialogue: 0,{ass_time(cue.start)},{ass_time(cue.end)},Default,,0,0,0,,{escape_ass(caption)}"
+        boundaries = sorted(
+            {
+                cue.start,
+                cue.end,
+                *[max(cue.start, min(cue.end, t)) for w in cue.words for t in (w.start, w.end)],
+            }
         )
+        if not design.highlight_words or not cue.words:
+            boundaries = [cue.start, cue.end]
+        for begin, end in zip(boundaries, boundaries[1:]):
+            if ass_time(begin) == ass_time(end):
+                continue
+            middle = (begin + end) / 2
+            active = next((i for i, w in enumerate(cue.words) if w.start <= middle < w.end), None)
+            line = (
+                highlighted_caption(caption, cue.words, active, design, cue.word_offset)
+                if design.highlight_words and active is not None
+                else escape_ass(caption)
+            )
+            events.append(f"Dialogue: 0,{ass_time(begin)},{ass_time(end)},Default,,0,0,0,,{line}")
     return header + "\n".join(events) + "\n"

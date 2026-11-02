@@ -31,3 +31,7 @@ Raíz temporal con marcador, inicialmente vacía y exclusiva; no debe ser el rep
 ## Autenticación local
 
 API exige X-Job-Token en memoria del navegador. Creación también establece cookie HttpOnly/SameSite=Strict por trabajo, limitada a `/api/jobs/{id}/artifacts`; permite `<video>` y descarga navegable con Range sin Blob gigante. Nunca token en query. No se permite CORS wildcard; Origin permitido para mutaciones y Host limitado. Sin Origin una mutación se rechaza. Producción local sirve un origen; Vite hace proxy en desarrollo. No exponer en LAN/Internet sin otra fase de autenticación y TLS.
+
+## Transcripción local (0.2.0)
+
+La cola incorpora transcribing. app/transcription.py supervisa FFmpeg PCM y el worker Node transcription/worker.mjs (Transformers.js, Whisper Tiny/Base CPU q8). Audio por ventanas de máximo 30 segundos, palabras con tiempos estimados y agrupación en cues breves. Revisión/aprobación de subtítulos antes de Diseño. ASS genera intervalos con solo la palabra activa coloreada; clip_cues conserva el desplazamiento textual al cortar una frase. Los SRT editados pierden los tiempos internos; no se usa alineación inventada. Caché de modelos persistente separada del temporal y sin audio. Ver TRANSCRIPTION.md.

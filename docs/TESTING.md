@@ -39,3 +39,14 @@ macOS nativo, llamada pagada con credenciales OpenAI, episodios de voz reales y 
 
 CI Linux confirmado: [GitHub Actions 41440870852](https://github.com/dafermen/EasyPodcast/actions/runs/41440870852), conclusión success, duración 1 min 6 s. Se ejecutaron doctor, toda la suite multimedia/backend, Ruff, pruebas frontend, formato y build. pip check local: sin dependencias incompatibles.
 
+## 0.2.0 · Generación local de subtítulos y resaltado
+
+Ampliación solicitada: opción inicial audio + SRT o audio solo con transcripción local Whisper Tiny/Base. Revisión y descarga SRT, aprobación antes de Diseño, corrección básica y reintento. Resaltado de la palabra actual en amarillo configurable, con tiempos estimados del modelo. Los SRT propios/editados conservan subtítulos normales para evitar alineación inventada.
+
+Implementación: app/transcription.py + transcription/worker.mjs independiente; no se modificó vDownloader. Modelo Tiny ya existente se copió a la caché independiente de EasyPodcast. Audio por ventanas acotadas, cola común, cancelación, timeout, progreso por segmentos y limpieza de PCM/JSON. Caché de modelos persistente fuera de Git; descargas configurables, sin llamadas pagadas.
+
+Verificación Windows: 44 backend, 7 frontend y 2 Node pasaron; build, formato, Ruff y auditoría de dependencias correctos. Whisper Tiny real CPU q8 reconoció 11 palabras de voz sintética inglesa de 4,435 s. Flujo real audio solo → SRT → aprobación → MP4 con resaltado y limpieza pasó. Cuadros del render confirman que el amarillo cambia de palabra, incluido recorte a mitad de frase. Navegador real confirmó selección inicial, transcripción, revisión, aprobación y controles de resaltado. Se corrigió y probó una colisión entre la lectura del fondo y la del SRT.
+
+Servicio activo comprobado: /api/health versión 0.2.0 y transcription.available=true. Capturas docs/screenshots/audio-only-flow.png, word-highlight-controls.png y word-highlight.png. Guía docs/TRANSCRIPTION.md.
+
+Pendientes: macOS nativo, Whisper Base real y calidad/rendimiento en voz humana larga o bilingüe. El benchmark previo de 30 min mide render, no transcripción. Los tiempos por palabra son estimados; primera descarga de modelos y uso offline sin caché no se comprobaron (se reutilizó caché). No se afirma precisión perfecta ni identificación de hablantes.

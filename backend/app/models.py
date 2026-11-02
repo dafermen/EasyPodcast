@@ -23,6 +23,8 @@ class Design(BaseModel):
     crf: int = Field(21, ge=18, le=28)
     preset: Literal["ultrafast", "veryfast", "fast", "medium"] = "veryfast"
     trim_subtitles: bool = False
+    highlight_words: bool = True
+    highlight_color: str = Field("#FFD54A", pattern=r"^#[0-9a-fA-F]{6}$")
 
     @model_validator(mode="after")
     def safe_layout(self):
@@ -35,3 +37,14 @@ class Design(BaseModel):
 class PreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     start: float = Field(0, ge=0)
+
+
+class TranscriptionOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    language: Literal["auto", "en", "es", "pt", "fr", "de", "it"] = "en"
+    model: Literal["tiny", "base"] = "tiny"
+
+
+class SubtitleEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    srt: str = Field(min_length=1, max_length=5 * 1024**2)

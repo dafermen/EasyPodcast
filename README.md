@@ -1,6 +1,6 @@
 # EasyPodcast
 
-Estudio web **local** para convertir audio y SRT en MP4 1080p con fondo, título, logo opcional, visualizador reactivo y subtítulos. Interfaz en español. Frontend React/TypeScript/Vite; backend FastAPI; motor FFmpeg nativo. No requiere Xcode.
+Estudio web **local** para convertir audio en MP4 1080p con fondo, título, logo opcional, visualizador y subtítulos. Puedes aportar SRT o generarlo desde el audio con Whisper local, con resaltado amarillo de la palabra actual. Interfaz en español. React/TypeScript/Vite, FastAPI, FFmpeg y un worker Node de transcripción. No requiere Xcode.
 
 El flujo permite validar archivos, diseñar, aprobar un fondo, revisar una prueba de hasta 20 segundos y exportar el episodio. Hay un fondo determinista sin IA; también puedes cargar PNG/JPEG. OpenAI es opcional y tiene costes externos. No se publica en YouTube.
 
@@ -23,6 +23,7 @@ Set-Location frontend
 npm.cmd ci
 npm.cmd run build
 Set-Location ..
+npm.cmd --prefix transcription ci
 .\.venv\Scripts\python.exe scripts\doctor.py
 powershell -ExecutionPolicy Bypass -File scripts\start.ps1
 ```
@@ -44,6 +45,7 @@ cd frontend
 npm ci
 npm run build
 cd ..
+npm --prefix transcription ci
 .venv/bin/python scripts/doctor.py
 bash scripts/start.sh
 ```
@@ -81,3 +83,7 @@ Los medios se escriben temporalmente en tu equipo, fuera del repositorio. Vencen
 Documentos: [producto](docs/PRODUCT_SPEC.md), [arquitectura](docs/ARCHITECTURE.md), [desarrollo](docs/DEVELOPMENT.md), [guía junior](docs/JUNIOR_GUIDE.md), [API](docs/API.md), [usuario](docs/USER_GUIDE.md), [privacidad](docs/PRIVACY_AND_FILES.md), [pruebas](docs/TESTING.md), [roadmap](docs/ROADMAP.md).
 
 La aplicación está preparada para loopback, no para exposición pública. La licencia del código está pendiente de decisión del propietario; consulta [avisos](THIRD_PARTY_NOTICES.md).
+
+## Generar subtítulos desde audio
+
+En Archivos elige «Generar desde el audio (local)», idioma y Tiny/Base. El SRT deja de ser obligatorio. Revisa el texto generado antes de continuar. En Diseño puedes activar/desactivar el resaltado de palabra y elegir color (amarillo inicial). El audio permanece local; primera vez descarga modelo de Hugging Face, caché persistente fuera del repositorio. No se necesita API ni se cobra por llamadas. Editar/reimportar el SRT elimina los tiempos por palabra; no se inventan para SRT propios. Guía completa: [TRANSCRIPTION](docs/TRANSCRIPTION.md).

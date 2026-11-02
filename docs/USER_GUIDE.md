@@ -13,3 +13,7 @@ Un cambio de diseño elimina artefactos anteriores y exige una prueba nueva. El 
 Archivos temporales vencen según la hora mostrada. Polling no extiende TTL. Eliminar borra al terminar la cancelación y las descargas activas. Reiniciar backend o recargar pestaña pierde la sesión; conserva tus originales. No hay historial ni reanudación.
 
 Los subtítulos se ajustan por ancho con la fuente incluida; por defecto se admiten dos líneas y puedes elegir tres. Si un texto no cabe, se rechaza el render con instrucciones para corregirlo, sin truncarlo. Llaves se escapan y tras barras originales se añade un carácter invisible para impedir comandos ASS conservando los glifos visibles. Revisa siempre la prueba.
+
+## Alternativa: subir solo audio
+
+En Archivos selecciona Generar desde el audio (local), idioma y Tiny/Base. Sube audio sin SRT. Espera la transcripción, revisa/descarga el SRT y pulsa Aprobar subtítulos y diseñar. En Diseño, Resaltar la palabra actual usa amarillo por defecto y permite otro color. Con SRT propio o editado se usan subtítulos normales. Revisa la prueba porque los tiempos por palabra son estimados. Ver TRANSCRIPTION.md.

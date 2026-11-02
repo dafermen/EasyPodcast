@@ -138,4 +138,44 @@ describe("episode assistant", () => {
       "Backend no disponible",
     );
   });
+  it("creates an audio-only job and waits for transcription", async () => {
+    const fetch = vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      json: async () =>
+        url.endsWith("/capabilities")
+          ? { ...caps, transcription: { available: true } }
+          : {
+              ...job,
+              state: "transcribing",
+              subtitles_ready: false,
+              subtitles_approved: false,
+            },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    render(<App />);
+    const user = userEvent.setup({ applyAccept: false });
+    await screen.findByText("Motor audiovisual listo");
+    await user.selectOptions(
+      screen.getByLabelText("Origen de los subtítulos"),
+      "generate",
+    );
+    expect(screen.queryByLabelText(/Subtítulos SRT/)).toBeNull();
+    await user.upload(
+      screen.getByLabelText(/Audio del episodio/),
+      new File(["synthetic"], "demo.wav", { type: "audio/wav" }),
+    );
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Crear episodio" }).closest("form")!,
+    );
+    await screen.findByRole("heading", { name: "Generando subtítulos" });
+    expect(
+      fetch.mock.calls.some(([url]) =>
+        String(url).includes("subtitle_mode=generate"),
+      ),
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "02 Diseño" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
 });

@@ -6,7 +6,7 @@ Base `/api`. OpenAPI interactivo `/docs`, esquema `/openapi.json`. Mutaciones ex
 |---|---|
 | GET /health | status/version sin secretos |
 | GET /capabilities | FFmpeg/FFprobe/filtros/encoders/fuente, proveedor disponible y límites |
-| POST /jobs | multipart audio y srt obligatorios, image y logo opcionales; 201 con id, token y Job |
+| POST /jobs | multipart audio; srt obligatorio con subtitle_mode=upload (default), ausente con subtitle_mode=generate; image/logo opcionales; query language=en/auto/es/pt/fr/de/it, model=tiny/base; 201 con id, token y Job |
 | GET /jobs/{id} | estado, fase, progreso 0..1 o null, error seguro, metadata, warnings, config, aprobaciones, artefactos y expires_at UTC |
 | PATCH /jobs/{id}/config | Design completo, campos omitidos reciben defaults; no es merge parcial |
 | POST /jobs/{id}/background | encola generación explícita; conserva fondo anterior si falla |
@@ -17,8 +17,12 @@ Base `/api`. OpenAPI interactivo `/docs`, esquema `/openapi.json`. Mutaciones ex
 | POST /jobs/{id}/cancel | solicita cancelación idempotente |
 | GET /jobs/{id}/artifacts/{kind} | background, preview, video, config; `download=true` fuerza descarga de medios; Range soportado |
 | DELETE /jobs/{id} | solicita cancelación y borrado diferido si hay lectores; deleted=true |
+| POST /jobs/{id}/transcribe | reintenta transcripción de un trabajo creado con modo generate |
+| GET /jobs/{id}/subtitles | SRT revisable y disponibilidad de tiempos por palabra; exige header token |
+| PUT /jobs/{id}/subtitles | JSON con srt; valida, invalida renders y elimina tiempos por palabra si cambia |
+| POST /jobs/{id}/subtitles/approve | habilita continuar tras revisión |
 
-Estados: ready, queued, generating_image, rendering_preview, rendering_video, cancelling, cancelled, completed, failed. Eliminados/expirados desaparecen del registro; no hay estado persistente expired.
+Estados: ready, queued, transcribing, generating_image, rendering_preview, rendering_video, cancelling, cancelled, completed, failed. Job incluye subtitle_source, subtitles_ready, subtitles_approved y word_timestamps. Artefacto adicional subtitles descarga SRT original/generado/editado identificado por contexto. Design incorpora highlight_words y highlight_color (amarillo #FFD54A). Eliminados/expirados desaparecen del registro; no hay estado persistente expired.
 
 Errores: 400 Host inválido; 403 Origin; 404 inexistente/token incorrecto/artefacto ausente; 408 carga incompleta agotada; 409 operación activa, falta aprobación/dependencias; 410 vencido antes de limpieza; 413 tamaño; 422 validación; 429 carga simultánea/límite de trabajos; 507 espacio. Cola llena devuelve 422 con explicación. El esquema multipart se declara explícitamente en OpenAPI; el receptor trabaja con streaming sin UploadFile ni spooling completo.
 

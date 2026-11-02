@@ -17,3 +17,7 @@ Un usuario debe producir un MP4 desde navegador sin consola una vez instalado. L
 ## Exclusiones
 
 Publicación YouTube, monetización garantizada, cuentas, colaboración remota, base de datos, historial, móviles nativos, transcripción, traducción, diarización, clonación de voz, lip sync, editor SRT completo y render distribuido. Xcode no forma parte del proyecto. El propietario decide licencia y futuras opciones de alojamiento.
+
+## Ampliación autorizada · 0.2.0
+
+Se incorpora generación local de SRT desde audio, revisión/corrección básica y resaltado opcional de la palabra actual con tiempos estimados de Whisper. Esto amplía la exclusión inicial de transcripción. No incorpora traducción, diarización ni alineación de SRT externos. Ver TRANSCRIPTION.md.

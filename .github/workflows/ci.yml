@@ -20,5 +20,7 @@ jobs:
       - run: python scripts/doctor.py
       - run: python -m pytest backend/tests -q
       - run: python -m ruff check backend/app backend/tests --config backend/pyproject.toml
+      - run: npm ci && npm test
+        working-directory: transcription
       - run: npm ci && npm test && npm run format:check && npm run build
         working-directory: frontend

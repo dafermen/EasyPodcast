@@ -3,6 +3,7 @@ export const isActive = (job: Job | null) =>
   !!job &&
   [
     "queued",
+    "transcribing",
     "generating_image",
     "rendering_preview",
     "rendering_video",

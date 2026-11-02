@@ -31,6 +31,8 @@ def run(args, timeout=30):
 
 
 def capabilities():
+    from .transcription import available
+
     result = {
         "ffmpeg": bool(shutil.which(settings.ffmpeg)),
         "ffprobe": bool(shutil.which(settings.ffprobe)),
@@ -39,6 +41,14 @@ def capabilities():
         "aac": False,
         "font": (FONTS / "DejaVuSans.ttf").is_file(),
         "image_provider": bool(settings.openai_api_key and settings.image_model),
+        "transcription": {
+            "available": available(),
+            "local": True,
+            "word_timestamps": True,
+            "models": ["tiny", "base"],
+            "languages": ["auto", "en", "es", "pt", "fr", "de", "it"],
+            "model_download_allowed": settings.transcription_allow_download,
+        },
         "limits": {
             "audio_bytes": settings.max_audio_bytes,
             "srt_bytes": settings.max_srt_bytes,

@@ -17,6 +17,8 @@ export interface Design {
   crf: number;
   preset: "ultrafast" | "veryfast" | "fast" | "medium";
   trim_subtitles: boolean;
+  highlight_words: boolean;
+  highlight_color: string;
 }
 export interface Job {
   id: string;
@@ -32,6 +34,10 @@ export interface Job {
   background_mode: string;
   artifacts: string[];
   expires_at: string;
+  subtitle_source: "upload" | "generate";
+  subtitles_ready: boolean;
+  subtitles_approved: boolean;
+  word_timestamps: boolean;
 }
 export interface Capabilities {
   ffmpeg: boolean;
@@ -42,6 +48,14 @@ export interface Capabilities {
   filters: Record<string, boolean>;
   render_ready: boolean;
   image_provider: boolean;
+  transcription?: {
+    available: boolean;
+    local: boolean;
+    word_timestamps: boolean;
+    models: string[];
+    languages: string[];
+    model_download_allowed: boolean;
+  };
   limits: {
     audio_bytes: number;
     srt_bytes: number;

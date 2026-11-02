@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parents[2] / ".env", extra="ignore")
     ffmpeg: str = "ffmpeg"
     ffprobe: str = "ffprobe"
+    node: str = "node"
+    transcription_cache: Path = Path.home() / ".cache" / "easypodcast" / "models"
+    transcription_allow_download: bool = True
     openai_api_key: str = ""
     image_model: str = ""
     image_size: str = "1536x1024"

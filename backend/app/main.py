@@ -3,6 +3,7 @@ import hmac
 import shutil
 import time
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -12,7 +13,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .config import settings
 from .jobs import ACTIVE, make_job, store
 from .media import ROOT, capabilities, local_background, normalize_image, validate_audio
-from .models import Design, PreviewRequest
+from .models import Design, PreviewRequest, SubtitleEdit, TranscriptionOptions
 from .subtitles import parse_srt
 from .uploads import receive_files
 
@@ -26,7 +27,7 @@ async def lifespan(app):
     await asyncio.to_thread(store.close)
 
 
-app = FastAPI(title="EasyPodcast", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.2.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -68,7 +69,7 @@ async def invalid(request, exc):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": "0.2.0"}
 
 
 @app.get("/api/capabilities")
@@ -105,7 +106,7 @@ def editable(job):
                 "multipart/form-data": {
                     "schema": {
                         "type": "object",
-                        "required": ["audio", "srt"],
+                        "required": ["audio"],
                         "properties": {
                             name: {"type": "string", "format": "binary"}
                             for name in ["audio", "srt", "image", "logo"]
@@ -116,14 +117,27 @@ def editable(job):
         }
     },
 )
-async def create_job(request: Request):
+async def create_job(
+    request: Request,
+    subtitle_mode: Literal["upload", "generate"] = "upload",
+    language: Literal["auto", "en", "es", "pt", "fr", "de", "it"] = "en",
+    model: Literal["tiny", "base"] = "tiny",
+):
     if request.app.state.upload_slot.locked():
         raise HTTPException(429, "Ya hay una carga en curso.")
     async with request.app.state.upload_slot:
-        return await create_uploaded_job(request)
+        return await create_uploaded_job(
+            request, subtitle_mode, TranscriptionOptions(language=language, model=model)
+        )
 
 
-async def create_uploaded_job(request):
+async def create_uploaded_job(request, subtitle_mode, options):
+    from .transcription import available
+
+    if subtitle_mode == "generate" and not available():
+        raise HTTPException(
+            409, "El motor de transcripción local no está instalado. Ejecuta npm ci en transcription."
+        )
     with store.lock:
         if len(store.jobs) >= settings.max_jobs:
             raise HTTPException(429, "Elimina un trabajo anterior o espera a que venza.")
@@ -131,14 +145,18 @@ async def create_uploaded_job(request):
     try:
         try:
             async with asyncio.timeout(settings.failure_ttl_seconds):
-                files = await receive_files(request, path)
+                files = await receive_files(request, path, require_srt=subtitle_mode == "upload")
         except TimeoutError as exc:
             raise HTTPException(408, "La carga incompleta superó el plazo permitido.") from exc
         meta = await asyncio.to_thread(validate_audio, path / "audio.bin")
-        cues, warnings = parse_srt((path / "original.srt").read_bytes())
+        if subtitle_mode == "generate" and "srt" in files:
+            raise ValueError("Elige generar subtítulos o cargar SRT, no ambas opciones.")
+        cues, warnings = (
+            parse_srt((path / "original.srt").read_bytes()) if subtitle_mode == "upload" else ([], [])
+        )
         if meta["audio_tracks"] > 1:
             warnings.append("Hay varias pistas; se usará la primera pista de audio.")
-        if max(c.end for c in cues) > meta["duration"]:
+        if cues and max(c.end for c in cues) > meta["duration"]:
             warnings.append(
                 "Hay subtítulos posteriores al audio. Activa el recorte explícito para renderizar."
             )
@@ -151,11 +169,22 @@ async def create_uploaded_job(request):
             await asyncio.to_thread(normalize_image, path / "logo.bin", path / "logo.png", True)
             (path / "logo.bin").unlink()
         job = make_job(jid, path, meta, cues, warnings)
+        job.subtitle_source = subtitle_mode
+        job.subtitles_approved = subtitle_mode == "upload"
+        job.transcription_options = options
+        if subtitle_mode == "upload":
+            job.artifacts.add("subtitles")
         job.background_mode = "upload" if "image" in files else "local"
         with store.lock:
             if len(store.jobs) >= settings.max_jobs:
                 raise HTTPException(429, "Límite de trabajos alcanzado.")
             store.jobs[jid] = job
+            if subtitle_mode == "generate":
+                try:
+                    store.enqueue(job, "transcript")
+                except BaseException:
+                    del store.jobs[jid]
+                    raise
         response = JSONResponse({**job.public(), "token": job.token}, status_code=201)
         response.set_cookie(
             f"ep_{jid}",
@@ -213,6 +242,8 @@ def approve_preview(job=Depends(get_job)):
 
 
 def check_render(job):
+    if not job.cues or not job.subtitles_approved:
+        raise HTTPException(409, "Genera y revisa los subtítulos antes de renderizar.")
     if not capabilities()["render_ready"]:
         raise HTTPException(409, "Faltan dependencias multimedia; consulta el diagnóstico.")
     if not job.approved:
@@ -277,6 +308,10 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
                 },
             )
         mapping = {
+            "subtitles": (
+                "generated.srt" if job.subtitle_source == "generate" else "original.srt",
+                "application/x-subrip",
+            ),
             "background": ("background.png", "image/png"),
             "preview": ("preview.mp4", "video/mp4"),
             "video": ("video.mp4", "video/mp4"),
@@ -306,6 +341,59 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
         filename=name if download else None,
         headers={"Cache-Control": "no-store"},
     )
+
+
+@app.post("/api/jobs/{jid}/transcribe")
+def retry_transcription(job=Depends(get_job)):
+    if job.subtitle_source != "generate":
+        raise HTTPException(409, "Este trabajo usa un SRT propio; crea otro con generación automática.")
+    store.enqueue(job, "transcript")
+    return job.public()
+
+
+@app.get("/api/jobs/{jid}/subtitles")
+def subtitles(job=Depends(get_job)):
+    with store.lock:
+        if job.state in ACTIVE:
+            raise HTTPException(409, "Espera a que termine la operación activa.")
+        if not job.cues:
+            raise HTTPException(409, "Aún no hay subtítulos disponibles.")
+        path = job.path / ("generated.srt" if job.subtitle_source == "generate" else "original.srt")
+        return {
+            "srt": path.read_text(encoding="utf-8-sig"),
+            "word_timestamps": any(c.words for c in job.cues),
+        }
+
+
+@app.put("/api/jobs/{jid}/subtitles")
+def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
+    if len(body.srt.encode("utf-8")) > settings.max_srt_bytes:
+        raise HTTPException(413, "El SRT supera el límite permitido.")
+    cues, warnings = parse_srt(body.srt.encode())
+    with store.lock:
+        editable(job)
+        path = job.path / ("generated.srt" if job.subtitle_source == "generate" else "original.srt")
+        if path.exists() and path.read_text(encoding="utf-8-sig") == body.srt:
+            return job.public()
+        path.write_text(body.srt, encoding="utf-8")
+        job.cues = cues
+        job.warnings = warnings + [
+            "SRT editado: se desactiva resaltado por palabra para no usar tiempos desactualizados."
+        ]
+        job.subtitles_approved = False
+        job.artifacts.add("subtitles")
+        store.invalidate(job)
+        return job.public()
+
+
+@app.post("/api/jobs/{jid}/subtitles/approve")
+def approve_subtitles(job=Depends(get_job)):
+    with store.lock:
+        editable(job)
+        if not job.cues:
+            raise HTTPException(409, "Aún no hay subtítulos para revisar.")
+        job.subtitles_approved = True
+        return job.public()
 
 
 frontend = ROOT / "frontend" / "dist"

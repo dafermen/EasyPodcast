@@ -13,9 +13,9 @@ from filelock import FileLock
 from .config import settings
 from .images import OpenAIProvider
 from .media import render
-from .models import Design
+from .models import Design, TranscriptionOptions
 
-ACTIVE = {"queued", "generating_image", "rendering_preview", "rendering_video", "cancelling"}
+ACTIVE = {"queued", "transcribing", "generating_image", "rendering_preview", "rendering_video", "cancelling"}
 
 
 @dataclass
@@ -41,6 +41,9 @@ class Job:
     process: object = None
     readers: int = 0
     deleting: bool = False
+    subtitle_source: str = "upload"
+    subtitles_approved: bool = True
+    transcription_options: TranscriptionOptions = field(default_factory=TranscriptionOptions)
 
     def public(self):
         return {
@@ -56,6 +59,10 @@ class Job:
             "preview_approved": self.preview_approved,
             "background_mode": self.background_mode,
             "artifacts": sorted(self.artifacts),
+            "subtitle_source": self.subtitle_source,
+            "subtitles_ready": bool(self.cues),
+            "subtitles_approved": self.subtitles_approved,
+            "word_timestamps": any(c.words for c in self.cues),
             "expires_at": datetime.fromtimestamp(
                 self.active_deadline if self.state in ACTIVE else self.expires, UTC
             ).isoformat(),
@@ -150,22 +157,31 @@ class Store:
                     if job.cancel.is_set() or job.deleting:
                         raise InterruptedError()
                     job.state = {
+                        "transcript": "transcribing",
                         "background": "generating_image",
                         "preview": "rendering_preview",
                         "video": "rendering_video",
                     }[kind]
                     job.phase = {
+                        "transcript": "Transcribiendo audio localmente",
                         "background": "Generando imagen",
                         "preview": "Renderizando prueba",
                         "video": "Renderizando episodio",
                     }[kind]
-                    if kind == "background":
+                    if kind == "transcript":
+                        self.invalidate(job)
+                        job.subtitles_approved = False
+                    elif kind == "background":
                         self.invalidate(job)
                     else:
                         job.artifacts.discard(kind)
                         if kind == "preview":
                             job.preview_approved = False
-                if kind == "background":
+                if kind == "transcript":
+                    from .transcription import transcribe
+
+                    cues, srt = transcribe(job)
+                elif kind == "background":
                     self.provider.generate_background(design, output)
                 else:
                     duration = (
@@ -175,11 +191,24 @@ class Store:
                 with self.lock:
                     if job.cancel.is_set():
                         raise InterruptedError()
-                    output.replace(job.path / ("background.png" if kind == "background" else f"{kind}.mp4"))
-                    job.artifacts.add(kind)
+                    if kind == "transcript":
+                        (job.path / "generated.srt").write_text(srt, encoding="utf-8")
+                        job.cues = cues
+                        job.artifacts.add("subtitles")
+                        job.warnings = [
+                            "Transcripción automática: revisa texto y tiempos estimados antes de continuar."
+                        ]
+                    else:
+                        output.replace(
+                            job.path / ("background.png" if kind == "background" else f"{kind}.mp4")
+                        )
+                        job.artifacts.add(kind)
                     if kind == "background":
                         job.background_mode, job.approved = "openai", False
-                    job.state, job.phase = "completed", "Operación completada"
+                    job.state, job.phase = (
+                        "completed",
+                        "Revisa los subtítulos generados" if kind == "transcript" else "Operación completada",
+                    )
                     job.progress = None if kind == "background" else 1.0
                     job.expires = time.time() + settings.ttl_seconds
             except InterruptedError:

@@ -13,3 +13,7 @@ FFmpeg y FFprobe son dependencias externas; el repositorio no incluye sus binari
 ## Paquetes
 
 React, Vite, FastAPI, Pillow, Pydantic, OpenAI SDK y demás dependencias conservan sus licencias y avisos en los paquetes instalados. Locks registran versiones exactas; revisar avisos antes de redistribuir. EasyPodcast no incluye audio personal ni imágenes de terceros sin licencia. La revisión editorial y derechos del contenido corresponden al creador.
+
+## Transcripción opcional
+
+Transformers.js (@huggingface/transformers), Apache-2.0; ONNX Runtime y dependencias conservan sus licencias instaladas. Modelos Xenova/whisper-tiny y Xenova/whisper-base: las fichas oficiales declaran Apache-2.0. No se incluyen pesos en Git. Se descargan o reutilizan localmente en caché. Revisar sus fichas/licencias antes de redistribuir modelos: https://huggingface.co/Xenova/whisper-tiny y https://huggingface.co/Xenova/whisper-base .

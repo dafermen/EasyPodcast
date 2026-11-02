@@ -9,7 +9,7 @@ from python_multipart.multipart import MultipartParser, parse_options_header
 from .config import settings
 
 
-async def receive_files(request, directory):
+async def receive_files(request, directory, require_srt=True):
     media_type, options = parse_options_header(request.headers.get("content-type", ""))
     boundary = options.get(b"boundary")
     if media_type != b"multipart/form-data" or not boundary or len(boundary) > 200:
@@ -95,8 +95,9 @@ async def receive_files(request, directory):
         async for chunk in request.stream():
             parser.write(chunk)
         parser.finalize()
-        if not current["ended"] or not {"audio", "srt"}.issubset(seen):
-            raise HTTPException(422, "Carga incompleta: se necesitan audio y SRT.")
+        required = {"audio", "srt"} if require_srt else {"audio"}
+        if not current["ended"] or not required.issubset(seen):
+            raise HTTPException(422, "Carga incompleta: faltan archivos requeridos para el modo elegido.")
         return seen
     except MultipartParseError as exc:
         raise HTTPException(422, "Carga multipart inválida.") from exc

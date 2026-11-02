@@ -11,3 +11,7 @@ TTL: 60 minutos después de operaciones completadas; 15 tras fallo/cancelación;
 Un crash o apagado abrupto puede dejar medios hasta el siguiente arranque. El borrado normal no es borrado forense ni garantiza eliminación de copias del OS/backups. El usuario controla los archivos descargados fuera del temporal. CLI conserva explícitamente su salida elegida. No ejecutar backend en red pública.
 
 No se registran claves, audio, SRT, prompts completos o imágenes. Scripts de inicio desactivan access logs. Errores al cliente no incluyen stderr ni rutas internas. Los temporales requieren permisos apropiados de la cuenta del OS; no hay aislamiento frente a otros procesos de la misma cuenta.
+
+## Transcripción local
+
+Whisper se ejecuta en un subproceso Node dentro del equipo. No se envían audios a Hugging Face: solo se descargan modelos si se permite. Su caché persiste fuera de Git y del TTL de medios. PCM, JSON de palabras y SRT son temporales del trabajo; PCM/JSON intermedios se eliminan tras cada intento. La descarga SRT elegida por el usuario se conserva donde la guarde.
