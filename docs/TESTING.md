@@ -36,3 +36,6 @@ Ejecución completada en Windows: 30 min de audio → 720,20 s de render; 391,15
 ## Pendientes de verificación externa
 
 macOS nativo, llamada pagada con credenciales OpenAI, episodios de voz reales y 60–120 minutos, caracteres que requieran fuentes adicionales, cierre abrupto del OS, desconexión de descargas bajo carga y evaluación de accesibilidad con lector de pantalla. CI remoto se registra en IMPLEMENTATION_STATUS tras observar su resultado. No hay afirmación de preparación para Internet.
+
+CI Linux confirmado: [GitHub Actions 41440870852](https://github.com/dafermen/EasyPodcast/actions/runs/41440870852), conclusión success, duración 1 min 6 s. Se ejecutaron doctor, toda la suite multimedia/backend, Ruff, pruebas frontend, formato y build. pip check local: sin dependencias incompatibles.
+

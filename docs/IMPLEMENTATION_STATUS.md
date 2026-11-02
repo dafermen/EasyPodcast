@@ -35,3 +35,8 @@ Benchmark real: 1.800 s de audio sintético exportados en **720,20 s (12 min)**,
 ## Próximo trabajo en Mac
 
 Clonar repositorio, instalar dependencias nativas, crear .venv, npm ci/build, doctor, pytest, pruebas frontend y recorrido de navegador. Registrar resultado y versiones; decidir después si se quiere alojamiento remoto (requiere diseño adicional).
+
+## CI remoto verificado
+
+GitHub Actions pasó en Ubuntu con Python 3.12 y Node 24 para el commit 581d670: doctor, 35 pruebas backend con FFmpeg real, Ruff, 5 pruebas frontend, formato y build. [Ejecución 41440870852](https://github.com/dafermen/EasyPodcast/actions/runs/41440870852). Esto verifica Linux en CI, no sustituye la prueba nativa de macOS.
+
