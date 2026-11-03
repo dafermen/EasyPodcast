@@ -10,7 +10,19 @@ export interface Design {
   wave_height: number;
   font_size: number;
   subtitle_font:
-    "sans" | "serif" | "mono" | "nunito" | "fredoka" | "quicksand" | "poppins";
+    | "sans"
+    | "serif"
+    | "mono"
+    | "nunito"
+    | "fredoka"
+    | "quicksand"
+    | "poppins"
+    | "baloo2"
+    | "outfit"
+    | "balsamiqsans"
+    | "lexend"
+    | "atkinsonhyperlegible"
+    | "comicneue";
   title_font: Design["subtitle_font"];
   title_bold: boolean;
   title_font_size: number;

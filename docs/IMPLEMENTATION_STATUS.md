@@ -1,3 +1,9 @@
+## Seis nuevas fuentes (2026-11-03)
+
+Añadidas Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue, Regular/Bold para título y subtítulos. Comic Neue figura como alternativa de estilo Comic Sans; no se redistribuye Comic Sans MS. Licencias OFL y hashes en THIRD_PARTY_NOTICES.md. Fuentes locales para composición, medición y FFmpeg.
+
+Verificado en Windows: 97 pruebas backend, 16 frontend y build correctos. Las seis familias nuevas se renderizaron realmente con ambos pesos y se comprobó diferencia visual. Servicio reiniciado con autorización; health correcto y capabilities enumera 13 familias. macOS pendiente de validación nativa.
+
 ## Posición del título · 2026-11-03
 
 Verificado en Windows: 79 pruebas backend, 16 frontend y build correctos. Los renders reales de la prueba de tipografía usan desplazamiento en ambos sentidos. Activado tras el reinicio autorizado: health respondió y OpenAPI expone los nuevos campos.

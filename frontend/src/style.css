@@ -657,3 +657,76 @@ footer {
 .continue-design {
   width: 100%;
 }
+
+@font-face {
+  font-family: EpisodeBaloo2;
+  src: url("/api/fonts/baloo2") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeBaloo2;
+  src: url("/api/fonts/baloo2?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeOutfit;
+  src: url("/api/fonts/outfit") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeOutfit;
+  src: url("/api/fonts/outfit?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeBalsamiqSans;
+  src: url("/api/fonts/balsamiqsans") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeBalsamiqSans;
+  src: url("/api/fonts/balsamiqsans?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeLexend;
+  src: url("/api/fonts/lexend") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeLexend;
+  src: url("/api/fonts/lexend?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeAtkinsonHyperlegible;
+  src: url("/api/fonts/atkinsonhyperlegible") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeAtkinsonHyperlegible;
+  src: url("/api/fonts/atkinsonhyperlegible?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeComicNeue;
+  src: url("/api/fonts/comicneue") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeComicNeue;
+  src: url("/api/fonts/comicneue?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}

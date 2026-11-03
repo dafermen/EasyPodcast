@@ -8,6 +8,12 @@ export const fontFamilies = {
   fredoka: "EpisodeFredoka",
   quicksand: "EpisodeQuicksand",
   poppins: "EpisodePoppins",
+  baloo2: "EpisodeBaloo2",
+  outfit: "EpisodeOutfit",
+  balsamiqsans: "EpisodeBalsamiqSans",
+  lexend: "EpisodeLexend",
+  atkinsonhyperlegible: "EpisodeAtkinsonHyperlegible",
+  comicneue: "EpisodeComicNeue",
 };
 export const fontChoices = [
   ["sans", "Sans · DejaVu Sans"],
@@ -17,6 +23,12 @@ export const fontChoices = [
   ["fredoka", "Fredoka · juvenil y expresiva"],
   ["quicksand", "Rounded · basada en Quicksand"],
   ["poppins", "Poppins · moderna y clara"],
+  ["baloo2", "Baloo 2"],
+  ["outfit", "Outfit"],
+  ["balsamiqsans", "Balsamiq Sans"],
+  ["lexend", "Lexend"],
+  ["atkinsonhyperlegible", "Atkinson Hyperlegible"],
+  ["comicneue", "Comic Neue (estilo Comic Sans)"],
 ] as const;
 export const logoChoices = [
   ["top-left", "Arriba a la izquierda"],

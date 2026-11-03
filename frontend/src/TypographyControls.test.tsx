@@ -26,7 +26,18 @@ it("offers friendly fonts and an independent bold switch", async () => {
   const user = userEvent.setup();
   await user.click(screen.getByLabelText("Negrilla en el título"));
   expect(change).toHaveBeenCalledWith("title_bold", false);
-  for (const family of ["nunito", "fredoka", "quicksand", "poppins"]) {
+  for (const family of [
+    "nunito",
+    "fredoka",
+    "quicksand",
+    "poppins",
+    "baloo2",
+    "outfit",
+    "balsamiqsans",
+    "lexend",
+    "atkinsonhyperlegible",
+    "comicneue",
+  ]) {
     await user.selectOptions(
       screen.getByLabelText("Fuente del título"),
       family,

@@ -9,6 +9,13 @@ FONTS = {
     "fredoka": ("Fredoka", "Fredoka-Regular.ttf"),
     "quicksand": ("EasyPodcast Rounded", "EasyPodcastRounded-Regular.ttf"),
     "poppins": ("Poppins", "Poppins-Regular.ttf"),
+    "baloo2": ("Baloo 2", "Baloo2-Regular.ttf"),
+    "outfit": ("Outfit", "Outfit-Regular.ttf"),
+    "balsamiqsans": ("Balsamiq Sans", "BalsamiqSans-Regular.ttf"),
+    "lexend": ("Lexend", "Lexend-Regular.ttf"),
+    "atkinsonhyperlegible": ("Atkinson Hyperlegible", "AtkinsonHyperlegible-Regular.ttf"),
+    "comicneue": ("Comic Neue", "ComicNeue-Regular.ttf"),
+
 }
 BOLD_FILES = {
     "sans": "DejaVuSans-Bold.ttf",

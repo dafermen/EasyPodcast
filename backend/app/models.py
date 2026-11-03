@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-FontKey = Literal["sans", "serif", "mono", "nunito", "fredoka", "quicksand", "poppins"]
+FontKey = Literal["sans", "serif", "mono", "nunito", "fredoka", "quicksand", "poppins", "baloo2", "outfit", "balsamiqsans", "lexend", "atkinsonhyperlegible", "comicneue"]
 
 
 class Design(BaseModel):

@@ -1,3 +1,7 @@
+## Nuevas fuentes · 2026-11-03
+
+Se añaden Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue para títulos y subtítulos, con pesos Regular/Bold locales. Comic Neue es una alternativa libre de estilo parecido a Comic Sans, no la fuente de Microsoft. Comic Sans no se redistribuye ni se sirve como webfont. Selección en Diseño → Tipografía y logo; guarda y genera otra prueba. JSON conserva la familia elegida.
+
 ## Posición del título · 2026-11-03
 
 En Diseño → Tipografía y logo, los controles de desplazamiento horizontal y vertical mueven el título. Valores negativos: izquierda/arriba; positivos: derecha/abajo. 0 conserva la posición original. Los valores se expresan en píxeles del video 1920 × 1080 y se guardan en JSON (title_offset_x/title_offset_y); diseños anteriores usan 0.
