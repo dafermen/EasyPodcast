@@ -70,7 +70,7 @@ Datos sintéticos: `python scripts/fixtures.py --output <carpeta-temporal>`. Pip
 
 Límites de producto configurables: audio 120 minutos/1 GiB; SRT 5 MiB; imagen 20 MiB/25 MP; un render, dos trabajos en cola, ocho trabajos retenidos y una carga simultánea. Se comprueban bytes durante la recepción y contenido real con FFprobe/Pillow. Se usa un presupuesto preventivo de disco de 1 MB por segundo más reserva; no es una predicción del tamaño final. Benchmark sintético Windows de 30 min: 12 min de render y pico RSS agregado de 391 MiB; 120 min todavía sin verificar. Detalles en [TESTING](docs/TESTING.md).
 
-Los medios se escriben temporalmente en tu equipo, fuera del repositorio. Vencen normalmente 60 minutos después de una operación; fallos/cancelaciones, 15 minutos; operaciones activas, máximo cuatro horas. El polling no renueva TTL. Reiniciar pierde los trabajos. **Recargar la página pierde el token de la interfaz**: descarga primero o vuelve a cargar los archivos. No hay cuentas ni historial.
+Los medios se escriben temporalmente en tu equipo, fuera del repositorio. Vencen normalmente 24 horas después de una operación; fallos/cancelaciones, 15 minutos; operaciones activas, máximo cuatro horas. El polling no renueva TTL. Reiniciar pierde los trabajos. **Recargar la página pierde el token de la interfaz**: descarga primero o vuelve a cargar los archivos. No hay cuentas ni historial.
 
 ## Solución de problemas
 

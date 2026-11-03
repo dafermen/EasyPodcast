@@ -5,7 +5,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -27,7 +27,7 @@ async def lifespan(app):
     await asyncio.to_thread(store.close)
 
 
-app = FastAPI(title="EasyPodcast", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.4.1", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -69,7 +69,7 @@ async def invalid(request, exc):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.4.0"}
+    return {"status": "ok", "version": "0.4.1"}
 
 
 @app.get("/api/capabilities")
@@ -85,9 +85,14 @@ def get_job(jid: str, request: Request):
         if "/artifacts/" in request.url.path:
             token = token or request.cookies.get(f"ep_{jid}", "")
         if not job or not token or not hmac.compare_digest(token, job.token):
-            raise HTTPException(404, "Trabajo no encontrado o token inválido.")
+            raise HTTPException(
+                404,
+                "El episodio ya no está disponible o la sesión no es válida. Puede haber vencido o perdido sus archivos al reiniciar el servidor. Vuelve a cargar los archivos.",
+            )
         if job.deleting or (job.state not in ACTIVE and time.time() > job.expires):
-            raise HTTPException(410, "El trabajo ha vencido o fue eliminado.")
+            raise HTTPException(
+                410, "El episodio venció o fue eliminado. Vuelve a cargar los archivos para continuar."
+            )
         return job
 
 
@@ -203,8 +208,18 @@ async def create_uploaded_job(request, subtitle_mode, options):
 
 
 @app.get("/api/jobs/{jid}")
-def status(job=Depends(get_job)):
+def status(response: Response, job=Depends(get_job)):
     with store.lock:
+        # Keep media authentication aligned with the real deadline. Polling never extends job TTL.
+        deadline = job.active_deadline + settings.ttl_seconds if job.state in ACTIVE else job.expires
+        response.set_cookie(
+            f"ep_{job.id}",
+            job.token,
+            httponly=True,
+            samesite="strict",
+            path=f"/api/jobs/{job.id}/artifacts",
+            max_age=max(1, int(deadline - time.time())),
+        )
         return job.public()
 
 

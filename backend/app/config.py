@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     max_image_bytes: int = Field(20 * 1024**2, gt=0)
     max_pixels: int = Field(25_000_000, gt=0)
     max_duration: float = Field(7200, gt=0)
-    ttl_seconds: int = Field(3600, gt=0)
+    ttl_seconds: int = Field(86400, gt=0)
     failure_ttl_seconds: int = Field(900, gt=0)
     active_ttl_seconds: int = Field(14400, gt=0)
     queue_size: int = Field(2, ge=1, le=8)

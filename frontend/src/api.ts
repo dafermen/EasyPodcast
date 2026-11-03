@@ -1,4 +1,13 @@
 import type { Job } from "./types";
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 export const isActive = (job: Job | null) =>
   !!job &&
   [
@@ -30,7 +39,7 @@ export async function api<T>(
       typeof data.detail === "string"
         ? data.detail
         : "Revisa los campos y sus límites.";
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
   return data as T;
 }

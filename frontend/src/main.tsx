@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, artifactUrl, isActive } from "./api";
+import { api, artifactUrl, isActive, ApiError } from "./api";
 import type { Capabilities, Design, Job } from "./types";
 import { text } from "./text";
 import "./style.css";
@@ -22,6 +22,7 @@ export function App() {
   const [start, setStart] = useState(0);
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
   const [subtitleMode, setSubtitleMode] = useState<"upload" | "generate">(
     "upload",
   );
@@ -54,6 +55,8 @@ export function App() {
         .catch((e) => {
           if (!stopped) {
             setError(e.message);
+            if (e instanceof ApiError && [404, 410].includes(e.status))
+              setUnavailable(true);
             clearInterval(timer);
           }
         });
@@ -71,6 +74,8 @@ export function App() {
       await action();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado.");
+      if (job && e instanceof ApiError && [404, 410].includes(e.status))
+        setUnavailable(true);
     } finally {
       setBusy(false);
     }
@@ -88,6 +93,7 @@ export function App() {
         data,
       );
       setToken(result.token);
+      setUnavailable(false);
       setJob(result);
       setDesign(result.config);
       setDirty(false);
@@ -122,7 +128,18 @@ export function App() {
       ),
     );
   }
-  const disabled = busy || active;
+  const disabled = busy || active || unavailable;
+  function saveRetainedDesign() {
+    if (!design) return;
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(design, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "easypodcast-design.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   const mode =
     job?.background_mode === "openai"
       ? text.openai
@@ -170,6 +187,33 @@ export function App() {
         {error && (
           <div className="alert error" role="alert">
             {error}
+          </div>
+        )}
+        {unavailable && (
+          <div className="alert error" role="status">
+            <strong>Este episodio ya no se puede procesar.</strong>
+            <p>
+              El servidor conserva los archivos solo hasta su vencimiento y los
+              pierde al reiniciar. Una prueba que siga visible puede estar en la
+              memoria del navegador. Puedes guardar el diseño y volver a cargar
+              tus archivos originales.
+            </p>
+            <button onClick={saveRetainedDesign} disabled={!design}>
+              Guardar diseño conservado (JSON)
+            </button>{" "}
+            <button
+              onClick={() => {
+                setJob(null);
+                setToken("");
+                setDesign(null);
+                setUnavailable(false);
+                setError("");
+                setDirty(false);
+                setStep(0);
+              }}
+            >
+              Cargar un nuevo episodio
+            </button>
           </div>
         )}
         <div className="workspace">
@@ -684,7 +728,7 @@ export function App() {
                 <button onClick={() => setStep(1)}>← Ajustar diseño</button>
               </div>
             )}
-            {job && step === 3 && (
+            {job && step === 3 && !unavailable && (
               <div className="fields">
                 <p>
                   Exporta el episodio completo con el diseño de tu prueba
@@ -813,7 +857,9 @@ export function App() {
             {job && (
               <div className="job-status" aria-live="polite">
                 <div className="status-line">
-                  <strong>{job.phase}</strong>
+                  <strong>
+                    {unavailable ? "Episodio no disponible" : job.phase}
+                  </strong>
                   {active && (
                     <button
                       disabled={busy}
@@ -823,7 +869,7 @@ export function App() {
                     </button>
                   )}
                 </div>
-                {job.progress !== null && (
+                {!unavailable && job.progress !== null && (
                   <>
                     <progress value={job.progress} max="1" />
                     <span>{Math.floor(job.progress * 100)} %</span>
@@ -900,7 +946,7 @@ export function App() {
       </main>
       <footer>
         Hecho para escuchar. Diseñado para compartir.
-        <span>EasyPodcast · 0.4.0</span>
+        <span>EasyPodcast · 0.4.1</span>
       </footer>
     </div>
   );

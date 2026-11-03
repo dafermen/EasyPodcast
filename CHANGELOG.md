@@ -35,3 +35,9 @@ Diseño → Tipografía y logo incorpora Negrilla en el título y fuentes Nunito
 - El propietario eligió MIT para el código propio de EasyPodcast.
 - Se añadió LICENSE y se actualizaron documentación y metadatos de paquetes/lockfiles.
 - Se mantienen las licencias de fuentes, modelos y dependencias de terceros.
+
+## Conservación de episodios · 0.4.1 (2026-11-03)
+
+Se amplía TTL_SECONDS de 3600 a 86400: 24 h tras creación o última operación completada. Fallos/cancelaciones siguen a 15 min y operaciones activas a 4 h. /api/capabilities expone retention. El polling renueva solo la cookie de medios hasta el vencimiento real; no prolonga el trabajo. Se mantienen borrado manual, limpieza y espera por descargas activas.
+
+404/410 explican que el episodio pudo vencer, eliminarse, perderse en un reinicio o tener sesión inválida. La interfaz bloquea el render al detectar pérdida del trabajo, permite guardar el diseño aún en memoria como JSON y ofrece cargar otro episodio. Un clip visible puede estar en caché; no demuestra que el servidor conserve el audio. No hay persistencia entre reinicios: un trabajo ya eliminado no se restaura cambiando el límite.

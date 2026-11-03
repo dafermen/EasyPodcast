@@ -1,3 +1,11 @@
+## Conservación de episodios · 0.4.1 (2026-11-03)
+
+Se amplía TTL_SECONDS de 3600 a 86400: 24 h tras creación o última operación completada. Fallos/cancelaciones siguen a 15 min y operaciones activas a 4 h. /api/capabilities expone retention. El polling renueva solo la cookie de medios hasta el vencimiento real; no prolonga el trabajo. Se mantienen borrado manual, limpieza y espera por descargas activas.
+
+404/410 explican que el episodio pudo vencer, eliminarse, perderse en un reinicio o tener sesión inválida. La interfaz bloquea el render al detectar pérdida del trabajo, permite guardar el diseño aún en memoria como JSON y ofrece cargar otro episodio. Un clip visible puede estar en caché; no demuestra que el servidor conserve el audio. No hay persistencia entre reinicios: un trabajo ya eliminado no se restaura cambiando el límite.
+
+---
+
 # Estado actual · 0.4.0
 
 Casilla Negrilla en el título y siete familias disponibles: DejaVu Sans/Serif/Mono, Nunito, Fredoka, Rounded (derivada de Quicksand, renombrada por licencia) y Poppins. Archivos Regular/Bold reales, servidos localmente, usados por medición de título, vista de composición y FFmpeg. Nuevas fuentes también en subtítulos. Licencias incluidas y JSON anterior compatible (title_bold=true por defecto).
@@ -73,3 +81,5 @@ Clonar repositorio, instalar dependencias nativas, crear .venv, npm ci/build, do
 GitHub Actions pasó en Ubuntu con Python 3.12 y Node 24 para el commit 581d670: doctor, 35 pruebas backend con FFmpeg real, Ruff, 5 pruebas frontend, formato y build. [Ejecución 41440870852](https://github.com/dafermen/EasyPodcast/actions/runs/41440870852). Esto verifica Linux en CI, no sustituye la prueba nativa de macOS.
 
 Verificación visual 0.4.0: navegador real alternó negrilla, seleccionó Fredoka/Nunito y guardó el diseño. document.fonts confirmó ambos pesos/fuentes cargados localmente. Captura docs/screenshots/friendly-fonts.png. Servicio /api/health versión 0.4.0 comprobado activo.
+
+Verificación 0.4.1: 72 pruebas backend y 12 frontend pasaron; build y formato correctos. Casos de vencimiento 410/404, límite de 24 h y cookie alineada sin renovar TTL, además de recuperación de interfaz ante 404. Servicio activo respondió retention.completed_seconds=86400, failed_seconds=900, active_seconds=14400 y survives_restart=false. No se restauró el episodio ya perdido de la captura.

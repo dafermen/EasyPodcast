@@ -46,3 +46,5 @@ Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos i
 ## 0.4.0 · Fuentes amigables y negrilla (2026-11-03)
 
 Diseño → Tipografía y logo incorpora Negrilla en el título y fuentes Nunito, Fredoka, Rounded y Poppins. Regular/Bold locales; JSON conserva title_bold (true por defecto). 69 pruebas backend y 10 frontend pasaron; pruebas multimedia de las cuatro familias en ambos pesos. Ver docs/DESIGN_CONTROLS.md y THIRD_PARTY_NOTICES.md para detalles/licencias.
+
+Retención 0.4.1: /capabilities incluye retention.completed_seconds (86400 por defecto), failed_seconds, active_seconds y survives_restart=false. 404/410 de un trabajo indican sesión/episodio no disponible, con instrucciones de recarga. GET de estado renueva solo la cookie de medios hasta el vencimiento existente; no amplía el TTL del trabajo.

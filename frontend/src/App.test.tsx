@@ -67,6 +67,46 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("episode assistant", () => {
+  it("offers a fresh upload after a job disappears", async () => {
+    const fetch = vi
+      .fn()
+      .mockImplementation(async (url: string, options?: { method: string }) => {
+        if (url.endsWith("/capabilities"))
+          return { ok: true, json: async () => caps };
+        if (options?.method === "POST")
+          return { ok: true, json: async () => job };
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ detail: "El episodio se perdió al reiniciar." }),
+        };
+      });
+    vi.stubGlobal("fetch", fetch);
+    render(<App />);
+    const user = userEvent.setup({ applyAccept: false });
+    await screen.findByText("Motor audiovisual listo");
+    await user.upload(
+      screen.getByLabelText(/Audio del episodio/),
+      new File(["audio"], "demo.wav", { type: "audio/wav" }),
+    );
+    await user.upload(
+      screen.getByLabelText(/Subtítulos SRT/),
+      new File(["srt"], "demo.srt"),
+    );
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Crear episodio" }).closest("form")!,
+    );
+    const reset = await screen.findByRole(
+      "button",
+      { name: "Cargar un nuevo episodio" },
+      { timeout: 4000 },
+    );
+    expect(
+      screen.getByText("Este episodio ya no se puede procesar."),
+    ).toBeTruthy();
+    await user.click(reset);
+    expect(screen.getByRole("button", { name: "Crear episodio" })).toBeTruthy();
+  });
   it("uploads files, explains optional IA and opens design", async () => {
     vi.stubGlobal(
       "fetch",

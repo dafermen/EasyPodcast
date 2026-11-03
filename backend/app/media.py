@@ -42,6 +42,12 @@ def capabilities():
         "font": all(font_path(key, bold).is_file() for key in FONTS for bold in (False, True)),
         "fonts": [{"id": key, "name": value[0]} for key, value in FONTS.items()],
         "image_provider": bool(settings.openai_api_key and settings.image_model),
+        "retention": {
+            "completed_seconds": settings.ttl_seconds,
+            "failed_seconds": settings.failure_ttl_seconds,
+            "active_seconds": settings.active_ttl_seconds,
+            "survives_restart": False,
+        },
         "transcription": {
             "available": available(),
             "local": True,

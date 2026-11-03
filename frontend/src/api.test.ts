@@ -3,6 +3,20 @@ import { api, isActive, artifactUrl } from "./api";
 import type { Job } from "./types";
 afterEach(() => vi.unstubAllGlobals());
 describe("API contract", () => {
+  it("preserves the status needed to recognize an unavailable job", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 410,
+        json: async () => ({ detail: "El episodio venció." }),
+      }),
+    );
+    await expect(api("/jobs/old")).rejects.toMatchObject({
+      status: 410,
+      message: "El episodio venció.",
+    });
+  });
   it("sends the token in a header and never in the artifact URL", async () => {
     const fetch = vi
       .fn()
