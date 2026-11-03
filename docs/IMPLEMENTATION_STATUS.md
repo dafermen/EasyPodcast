@@ -1,6 +1,6 @@
 ## Posición del título · 2026-11-03
 
-Verificado en Windows: 79 pruebas backend, 16 frontend y build correctos. Los renders reales de la prueba de tipografía usan desplazamiento en ambos sentidos. Activación pendiente del reinicio autorizado; no se reinició el servicio.
+Verificado en Windows: 79 pruebas backend, 16 frontend y build correctos. Los renders reales de la prueba de tipografía usan desplazamiento en ambos sentidos. Activado tras el reinicio autorizado: health respondió y OpenAPI expone los nuevos campos.
 
 En Diseño → Tipografía y logo, los controles de desplazamiento horizontal y vertical mueven el título. Valores negativos: izquierda/arriba; positivos: derecha/abajo. 0 conserva la posición original. Los valores se expresan en píxeles del video 1920 × 1080 y se guardan en JSON (title_offset_x/title_offset_y); diseños anteriores usan 0.
 
