@@ -2,7 +2,7 @@
 
 1. Arranca EasyPodcast y abre el navegador. Revisa “Motor audiovisual listo”. Si faltan dependencias, ejecuta el doctor antes de exportar.
 2. En Archivos selecciona audio y SRT. Opcionalmente añade fondo PNG/JPEG y logo PNG. Pulsa Crear episodio. Se verifica contenido real; la extensión no basta.
-3. En Diseño escribe título, descripción y ajustes. Guarda el diseño antes de generar una imagen o continuar. El fondo local está identificado como sin IA; no tiene presentadores. Una imagen propia permite conservar exactamente los mismos personajes en otros episodios.
+3. Al comenzar Diseño elige Configurar manualmente o Importar un diseño JSON descargado de EasyPodcast. El JSON incluye ajustes; carga audio, subtítulos, fondo y logo aparte. Revisa o modifica el diseño y pulsa Guardar diseño. La confirmación indica el siguiente paso: pulsa el botón verde Aprobar fondo y continuar. El fondo local está identificado como sin IA; no tiene presentadores. Una imagen propia permite conservar exactamente los mismos personajes en otros episodios.
 4. Si configuraste OpenAI, “Generar imagen con IA” hace una llamada explícita con datos visuales. Revisa el resultado. Regenerar puede generar otro coste. Aprueba el fondo que quieres conservar.
 5. Ajusta la prueba desde un segundo específico. Su duración es hasta 20 segundos, limitada al audio restante. Los subtítulos se recortan y desplazan para ese segmento. Reproduce el MP4: tiene prioridad sobre la aproximación CSS.
 6. Aprueba la prueba y renderiza el episodio completo. El porcentaje procede del tiempo procesado por FFmpeg; durante IA no hay porcentaje. Puedes cancelar y reintentar.

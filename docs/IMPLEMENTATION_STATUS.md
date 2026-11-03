@@ -1,3 +1,10 @@
+## Flujo de diseño · 2026-11-03
+
+- Diseño comienza con la elección Configurar manualmente o Importar un diseño JSON.
+- El JSON carga los ajustes y permite revisarlos; audio, subtítulos, fondo y logo se cargan aparte. Un archivo inválido no reemplaza el diseño actual.
+- Guardar y continuar están juntos. Tras guardar aparece la confirmación y el botón verde «Aprobar fondo y continuar →». Los cambios pendientes bloquean continuar; la aprobación sigue siendo explícita.
+- Verificación: 15 pruebas frontend y compilación TypeScript/Vite correctas en Windows. Cambio exclusivo del frontend, sin reinicio del backend.
+
 ## Conservación de episodios · 0.4.1 (2026-11-03)
 
 Se amplía TTL_SECONDS de 3600 a 86400: 24 h tras creación o última operación completada. Fallos/cancelaciones siguen a 15 min y operaciones activas a 4 h. /api/capabilities expone retention. El polling renueva solo la cookie de medios hasta el vencimiento real; no prolonga el trabajo. Se mantienen borrado manual, limpieza y espera por descargas activas.

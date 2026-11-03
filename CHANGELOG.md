@@ -1,3 +1,10 @@
+## Flujo de diseño · 2026-11-03
+
+- Diseño comienza con la elección Configurar manualmente o Importar un diseño JSON.
+- El JSON carga los ajustes y permite revisarlos; audio, subtítulos, fondo y logo se cargan aparte. Un archivo inválido no reemplaza el diseño actual.
+- Guardar y continuar están juntos. Tras guardar aparece la confirmación y el botón verde «Aprobar fondo y continuar →». Los cambios pendientes bloquean continuar; la aprobación sigue siendo explícita.
+- Verificación: 15 pruebas frontend y compilación TypeScript/Vite correctas en Windows. Cambio exclusivo del frontend, sin reinicio del backend.
+
 # Cambios
 
 ## 0.2.0 · 2026-11-02

@@ -628,3 +628,32 @@ footer {
     transition: none !important;
   }
 }
+
+.design-entry,
+.design-actions {
+  border: 1px solid #cbd9d0;
+  border-radius: 9px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.design-entry legend {
+  font-size: 13px;
+  font-weight: 650;
+  padding: 0 6px;
+}
+.design-actions {
+  background: #f2f7f2;
+}
+.design-actions p {
+  margin: 0;
+}
+.controls .saved-feedback {
+  color: #164e45;
+  font-weight: 600;
+}
+.continue-design {
+  width: 100%;
+}

@@ -12,17 +12,6 @@ Cada tarea debe distinguir código existente de comportamiento verificado. La co
 | 5 Robustez | seguridad local, limpieza, CI, pruebas, docs y benchmark | evidencia, límites y pendientes explícitos |
 
 Trabajo posterior verificable: probar macOS, realizar generación real controlada si el usuario la solicita/configura, medir 30–60 minutos con CPU/RAM/disco, ampliar pruebas de cierres abruptos y diversos decodificadores, extraer todos los textos UI, mejorar ajuste de subtítulos densos y dividir App en componentes al crecer. No añadir funcionalidades fuera de alcance para llenar el roadmap.
-## Próximo bloque · Claridad después de guardar diseño (2026-11-03)
+## Claridad del diseño (2026-11-03)
 
-Estado: pendiente, solicitado por el usuario; no implementado todavía.
-
-Problema observado: después de Guardar diseño, el usuario no descubre que debe pulsar Aprobar fondo y continuar. La tarjeta opcional de IA separa ambas acciones y el botón siguiente tiene poca jerarquía visual.
-
-Propuesta recomendada:
-- Mostrar confirmación persistente y accesible: «Diseño guardado. Revisa el fondo y pulsa Aprobar fondo y continuar».
-- Cambiar Guardar diseño por «✓ Diseño guardado» tras guardar correctamente.
-- Dar a «Aprobar fondo y continuar →» fondo verde sólido y texto blanco cuando esté habilitado; no depender solo del color.
-- Agrupar las acciones de guardar y continuar para que la tarjeta opcional de IA no interrumpa el recorrido. Conservar acceso claro a generación de imágenes.
-- No avanzar ni aprobar automáticamente. Si hay cambios sin guardar o una operación activa, mantener el bloqueo y explicar qué falta; si falla el guardado, no mostrar éxito.
-
-Aceptación: tras guardar correctamente, el siguiente paso se identifica por texto y jerarquía visual; funciona con teclado, foco visible y anuncio accesible. Confirmar el recorrido con imagen propia y sin proveedor IA, además de la generación opcional.
+Implementado: elección inicial manual/importar, revisión de lo importado, confirmación accesible de guardado, acciones agrupadas y botón verde para continuar. No hay aprobación automática. Los cambios sin guardar y operaciones activas bloquean continuar. Verificación: 15 pruebas frontend y build correctos; no se ejecutó generación de IA de pago.

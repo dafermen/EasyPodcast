@@ -1,3 +1,5 @@
+import { DesignEntry } from "./DesignEntry";
+import { DesignActions } from "./DesignActions";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, artifactUrl, isActive, ApiError } from "./api";
@@ -22,6 +24,11 @@ export function App() {
   const [start, setStart] = useState(0);
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [designMethod, setDesignMethod] = useState<"manual" | "import">(
+    "manual",
+  );
+  const [importedDesign, setImportedDesign] = useState(false);
+  const [savedDesign, setSavedDesign] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [subtitleMode, setSubtitleMode] = useState<"upload" | "generate">(
     "upload",
@@ -97,12 +104,16 @@ export function App() {
       setJob(result);
       setDesign(result.config);
       setDirty(false);
+      setDesignMethod("manual");
+      setImportedDesign(false);
+      setSavedDesign(false);
       setStep(subtitleMode === "generate" ? 0 : 1);
     });
   }
   function change<K extends keyof Design>(key: K, value: Design[K]) {
     setDesign((d) => (d ? { ...d, [key]: value } : d));
     setDirty(true);
+    setSavedDesign(false);
   }
   async function save() {
     if (!job || !design) return;
@@ -115,6 +126,31 @@ export function App() {
     setJob(result);
     setDesign(result.config);
     setDirty(false);
+    setSavedDesign(true);
+    setRevision((r) => r + 1);
+  }
+  async function importDesign(file: File) {
+    if (!job) return;
+    if (file.size > 16384) throw new Error("Configuración demasiado grande.");
+    let data: unknown;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      throw new Error(
+        "El archivo no contiene JSON válido. Usa un diseño exportado desde EasyPodcast.",
+      );
+    }
+    const result = await api<Job>(
+      `/jobs/${job.id}/config`,
+      token,
+      "PATCH",
+      JSON.stringify(data),
+    );
+    setDesign(result.config);
+    setJob(result);
+    setDirty(false);
+    setSavedDesign(true);
+    setImportedDesign(true);
     setRevision((r) => r + 1);
   }
   async function action(path: string, body?: unknown) {
@@ -363,328 +399,317 @@ export function App() {
             )}
             {job && design && step === 1 && (
               <div className="fields">
-                <label>
-                  Título
-                  <input
-                    value={design.title}
-                    maxLength={120}
-                    disabled={disabled}
-                    onChange={(e) => change("title", e.target.value)}
-                  />
-                </label>
-                <label>
-                  Descripción visual
-                  <textarea
-                    value={design.description}
-                    maxLength={1200}
-                    disabled={disabled}
-                    onChange={(e) => change("description", e.target.value)}
-                  />
-                </label>
-                <div className="pair">
-                  <label>
-                    Estilo de imagen
-                    <select
-                      value={design.image_style}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        change(
-                          "image_style",
-                          e.target.value as Design["image_style"],
-                        )
-                      }
-                    >
-                      <option value="illustration">Ilustración</option>
-                      <option value="realistic">Realista</option>
-                    </select>
-                  </label>
-                  <label>
-                    Color de onda
-                    <input
-                      type="color"
-                      value={design.color}
-                      disabled={disabled}
-                      onChange={(e) => change("color", e.target.value)}
-                    />
-                  </label>
-                </div>
-                <label>
-                  Ambiente y paleta
-                  <input
-                    value={design.atmosphere}
-                    maxLength={300}
-                    disabled={disabled}
-                    onChange={(e) => change("atmosphere", e.target.value)}
-                  />
-                </label>
-                <div className="pair">
-                  <label>
-                    Visualizador
-                    <select
-                      value={design.visualizer}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        change(
-                          "visualizer",
-                          e.target.value as Design["visualizer"],
-                        )
-                      }
-                    >
-                      <option value="waveform">Onda</option>
-                      <option value="spectrum">Barras de frecuencia</option>
-                    </select>
-                  </label>
-                  <label>
-                    Sensibilidad
-                    <input
-                      type="number"
-                      min="0.2"
-                      max="4"
-                      step="0.1"
-                      value={design.sensitivity}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        change("sensitivity", Number(e.target.value))
-                      }
-                    />
-                  </label>
-                </div>
-                <TypographyControls
-                  design={design}
+                <DesignEntry
+                  method={designMethod}
+                  setMethod={setDesignMethod}
+                  imported={importedDesign}
                   disabled={disabled}
-                  hasLogo={job.artifacts.includes("logo")}
-                  change={change}
+                  onImport={(file) => perform(() => importDesign(file))}
                 />
-                {job.word_timestamps ? (
-                  <div className="pair">
+                {(designMethod === "manual" || importedDesign) && (
+                  <>
+                    <label>
+                      Título
+                      <input
+                        value={design.title}
+                        maxLength={120}
+                        disabled={disabled}
+                        onChange={(e) => change("title", e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Descripción visual
+                      <textarea
+                        value={design.description}
+                        maxLength={1200}
+                        disabled={disabled}
+                        onChange={(e) => change("description", e.target.value)}
+                      />
+                    </label>
+                    <div className="pair">
+                      <label>
+                        Estilo de imagen
+                        <select
+                          value={design.image_style}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change(
+                              "image_style",
+                              e.target.value as Design["image_style"],
+                            )
+                          }
+                        >
+                          <option value="illustration">Ilustración</option>
+                          <option value="realistic">Realista</option>
+                        </select>
+                      </label>
+                      <label>
+                        Color de onda
+                        <input
+                          type="color"
+                          value={design.color}
+                          disabled={disabled}
+                          onChange={(e) => change("color", e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <label>
+                      Ambiente y paleta
+                      <input
+                        value={design.atmosphere}
+                        maxLength={300}
+                        disabled={disabled}
+                        onChange={(e) => change("atmosphere", e.target.value)}
+                      />
+                    </label>
+                    <div className="pair">
+                      <label>
+                        Visualizador
+                        <select
+                          value={design.visualizer}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change(
+                              "visualizer",
+                              e.target.value as Design["visualizer"],
+                            )
+                          }
+                        >
+                          <option value="waveform">Onda</option>
+                          <option value="spectrum">Barras de frecuencia</option>
+                        </select>
+                      </label>
+                      <label>
+                        Sensibilidad
+                        <input
+                          type="number"
+                          min="0.2"
+                          max="4"
+                          step="0.1"
+                          value={design.sensitivity}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change("sensitivity", Number(e.target.value))
+                          }
+                        />
+                      </label>
+                    </div>
+                    <TypographyControls
+                      design={design}
+                      disabled={disabled}
+                      hasLogo={job.artifacts.includes("logo")}
+                      change={change}
+                    />
+                    {job.word_timestamps ? (
+                      <div className="pair">
+                        <label className="check">
+                          <input
+                            type="checkbox"
+                            checked={design.highlight_words}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("highlight_words", e.target.checked)
+                            }
+                          />
+                          Resaltar la palabra actual
+                        </label>
+                        <label>
+                          Color de resaltado
+                          <input
+                            type="color"
+                            value={design.highlight_color}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("highlight_color", e.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <p className="note">
+                        Resaltado por palabra disponible con subtítulos
+                        generados desde el audio. El SRT propio conserva
+                        subtítulos normales.
+                      </p>
+                    )}
+                    <details>
+                      <summary>Composición y subtítulos</summary>
+                      <div className="pair">
+                        <label>
+                          Posición onda
+                          <input
+                            type="number"
+                            min="0.3"
+                            max="0.65"
+                            step="0.01"
+                            value={design.wave_y}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("wave_y", Number(e.target.value))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Altura onda
+                          <input
+                            type="number"
+                            min="0.06"
+                            max="0.22"
+                            step="0.01"
+                            value={design.wave_height}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("wave_height", Number(e.target.value))
+                            }
+                          />
+                        </label>
+                      </div>
+                      <div className="pair">
+                        <label>
+                          Color subtítulos
+                          <input
+                            type="color"
+                            value={design.subtitle_color}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("subtitle_color", e.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+                      <div className="pair">
+                        <label>
+                          Margen inferior
+                          <input
+                            type="number"
+                            min="40"
+                            max="180"
+                            value={design.subtitle_margin}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("subtitle_margin", Number(e.target.value))
+                            }
+                          />
+                        </label>
+                        <label>
+                          Contorno
+                          <input
+                            type="number"
+                            min="1"
+                            max="6"
+                            value={design.outline}
+                            disabled={disabled}
+                            onChange={(e) =>
+                              change("outline", Number(e.target.value))
+                            }
+                          />
+                        </label>
+                      </div>
+                      <label>
+                        Ancho subtítulos
+                        <input
+                          type="number"
+                          min="0.5"
+                          max="0.9"
+                          step="0.05"
+                          value={design.subtitle_width}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change("subtitle_width", Number(e.target.value))
+                          }
+                        />
+                      </label>
+                      <label>
+                        Máximo de líneas
+                        <select
+                          value={design.max_lines}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change("max_lines", Number(e.target.value))
+                          }
+                        >
+                          <option value="2">Dos líneas</option>
+                          <option value="3">Tres líneas</option>
+                        </select>
+                      </label>
+                      <label>
+                        Preset CPU
+                        <select
+                          value={design.preset}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change("preset", e.target.value as Design["preset"])
+                          }
+                        >
+                          <option>veryfast</option>
+                          <option>fast</option>
+                          <option>medium</option>
+                          <option>ultrafast</option>
+                        </select>
+                      </label>
+                      <label>
+                        Calidad CRF (menor = más calidad)
+                        <input
+                          type="number"
+                          min="18"
+                          max="28"
+                          value={design.crf}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            change("crf", Number(e.target.value))
+                          }
+                        />
+                      </label>
+                    </details>
                     <label className="check">
                       <input
                         type="checkbox"
-                        checked={design.highlight_words}
+                        checked={design.trim_subtitles}
                         disabled={disabled}
                         onChange={(e) =>
-                          change("highlight_words", e.target.checked)
+                          change("trim_subtitles", e.target.checked)
                         }
                       />
-                      Resaltar la palabra actual
+                      Autorizar recorte de subtítulos que exceden el audio
                     </label>
-                    <label>
-                      Color de resaltado
-                      <input
-                        type="color"
-                        value={design.highlight_color}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("highlight_color", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <p className="note">
-                    Resaltado por palabra disponible con subtítulos generados
-                    desde el audio. El SRT propio conserva subtítulos normales.
-                  </p>
-                )}
-                <details>
-                  <summary>Composición y subtítulos</summary>
-                  <div className="pair">
-                    <label>
-                      Posición onda
-                      <input
-                        type="number"
-                        min="0.3"
-                        max="0.65"
-                        step="0.01"
-                        value={design.wave_y}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("wave_y", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                    <label>
-                      Altura onda
-                      <input
-                        type="number"
-                        min="0.06"
-                        max="0.22"
-                        step="0.01"
-                        value={design.wave_height}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("wave_height", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="pair">
-                    <label>
-                      Color subtítulos
-                      <input
-                        type="color"
-                        value={design.subtitle_color}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("subtitle_color", e.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="pair">
-                    <label>
-                      Margen inferior
-                      <input
-                        type="number"
-                        min="40"
-                        max="180"
-                        value={design.subtitle_margin}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("subtitle_margin", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                    <label>
-                      Contorno
-                      <input
-                        type="number"
-                        min="1"
-                        max="6"
-                        value={design.outline}
-                        disabled={disabled}
-                        onChange={(e) =>
-                          change("outline", Number(e.target.value))
-                        }
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    Ancho subtítulos
-                    <input
-                      type="number"
-                      min="0.5"
-                      max="0.9"
-                      step="0.05"
-                      value={design.subtitle_width}
+                    <DesignActions
+                      dirty={dirty}
                       disabled={disabled}
-                      onChange={(e) =>
-                        change("subtitle_width", Number(e.target.value))
+                      saved={savedDesign}
+                      disabledMessage={
+                        unavailable
+                          ? "El episodio ya no está disponible. Carga de nuevo tus archivos."
+                          : undefined
                       }
-                    />
-                  </label>
-                  <label>
-                    Máximo de líneas
-                    <select
-                      value={design.max_lines}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        change("max_lines", Number(e.target.value))
-                      }
-                    >
-                      <option value="2">Dos líneas</option>
-                      <option value="3">Tres líneas</option>
-                    </select>
-                  </label>
-                  <label>
-                    Preset CPU
-                    <select
-                      value={design.preset}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        change("preset", e.target.value as Design["preset"])
-                      }
-                    >
-                      <option>veryfast</option>
-                      <option>fast</option>
-                      <option>medium</option>
-                      <option>ultrafast</option>
-                    </select>
-                  </label>
-                  <label>
-                    Calidad CRF (menor = más calidad)
-                    <input
-                      type="number"
-                      min="18"
-                      max="28"
-                      value={design.crf}
-                      disabled={disabled}
-                      onChange={(e) => change("crf", Number(e.target.value))}
-                    />
-                  </label>
-                </details>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={design.trim_subtitles}
-                    disabled={disabled}
-                    onChange={(e) => change("trim_subtitles", e.target.checked)}
-                  />
-                  Autorizar recorte de subtítulos que exceden el audio
-                </label>
-                <button
-                  className="primary"
-                  disabled={disabled || !dirty}
-                  onClick={() => perform(save)}
-                >
-                  Guardar diseño
-                </button>
-                <div className="ai-box">
-                  <h3>Un fondo para tu episodio</h3>
-                  <p>
-                    La IA recibe título, descripción y ajustes visuales. Tiene
-                    costes externos. No recibe tu audio ni SRT.
-                  </p>
-                  <button
-                    disabled={disabled || dirty || !caps?.image_provider}
-                    onClick={() => perform(() => action("background"))}
-                  >
-                    Generar imagen con IA
-                  </button>
-                  {!caps?.image_provider && (
-                    <small>
-                      IA opcional: falta configurar el proveedor en el backend.
-                    </small>
-                  )}
-                </div>
-                <button
-                  disabled={disabled || dirty}
-                  onClick={() =>
-                    perform(async () => {
-                      await action("background/approve");
-                      setStep(2);
-                    })
-                  }
-                >
-                  Aprobar fondo y continuar →
-                </button>
-                <label>
-                  Importar diseño JSON
-                  <input
-                    type="file"
-                    accept="application/json,.json"
-                    disabled={disabled}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f)
+                      onSave={() => perform(save)}
+                      onContinue={() =>
                         perform(async () => {
-                          if (f.size > 16384)
-                            throw new Error("Configuración demasiado grande.");
-                          const data = JSON.parse(await f.text());
-                          const result = await api<Job>(
-                            `/jobs/${job.id}/config`,
-                            token,
-                            "PATCH",
-                            JSON.stringify(data),
-                          );
-                          setDesign(result.config);
-                          setJob(result);
-                          setDirty(false);
-                          setRevision((r) => r + 1);
-                        });
-                    }}
-                  />
-                </label>
+                          await action("background/approve");
+                          setStep(2);
+                        })
+                      }
+                    />
+                    <div className="ai-box">
+                      <h3>Opcional: generar otro fondo con IA</h3>
+                      <p>
+                        La IA recibe título, descripción y ajustes visuales.
+                        Tiene costes externos. No recibe tu audio ni SRT.
+                      </p>
+                      <button
+                        disabled={disabled || dirty || !caps?.image_provider}
+                        onClick={() => perform(() => action("background"))}
+                      >
+                        Generar imagen con IA
+                      </button>
+                      {!caps?.image_provider && (
+                        <small>
+                          IA opcional: falta configurar el proveedor en el
+                          backend.
+                        </small>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
             {job && step === 2 && (
