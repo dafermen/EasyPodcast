@@ -5,11 +5,25 @@ FONTS = {
     "sans": ("DejaVu Sans", "DejaVuSans.ttf"),
     "serif": ("DejaVu Serif", "DejaVuSerif.ttf"),
     "mono": ("DejaVu Sans Mono", "DejaVuSansMono.ttf"),
+    "nunito": ("Nunito", "Nunito-Regular.ttf"),
+    "fredoka": ("Fredoka", "Fredoka-Regular.ttf"),
+    "quicksand": ("EasyPodcast Rounded", "EasyPodcastRounded-Regular.ttf"),
+    "poppins": ("Poppins", "Poppins-Regular.ttf"),
+}
+BOLD_FILES = {
+    "sans": "DejaVuSans-Bold.ttf",
+    "serif": "DejaVuSerif-Bold.ttf",
+    "mono": "DejaVuSansMono-Bold.ttf",
+    **{
+        key: filename.replace("-Regular.ttf", "-Bold.ttf")
+        for key, (_, filename) in FONTS.items()
+        if key not in {"sans", "serif", "mono"}
+    },
 }
 
 
-def font_path(key):
-    return FONT_DIR / FONTS[key][1]
+def font_path(key, bold=False):
+    return FONT_DIR / (BOLD_FILES[key] if bold else FONTS[key][1])
 
 
 def logo_position(design):

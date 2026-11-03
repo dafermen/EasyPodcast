@@ -39,7 +39,7 @@ def capabilities():
         "filters": {},
         "h264": False,
         "aac": False,
-        "font": all(font_path(key).is_file() for key in FONTS),
+        "font": all(font_path(key, bold).is_file() for key in FONTS for bold in (False, True)),
         "fonts": [{"id": key, "name": value[0]} for key, value in FONTS.items()],
         "image_provider": bool(settings.openai_api_key and settings.image_model),
         "transcription": {
@@ -178,8 +178,10 @@ def render(job, design, start, duration, output, update):
     # All paths in filters are controlled relative filenames: Windows drive syntax never enters the graph.
     fonts = job.path / "fonts"
     fonts.mkdir(exist_ok=True)
-    for key, (_, filename) in FONTS.items():
-        shutil.copyfile(font_path(key), fonts / filename)
+    for key in FONTS:
+        for bold in (False, True):
+            source = font_path(key, bold)
+            shutil.copyfile(source, fonts / source.name)
     size = f"1600x{round(1080 * design.wave_height) // 2 * 2}"
     color = "0x" + design.color[1:]
     visual = (

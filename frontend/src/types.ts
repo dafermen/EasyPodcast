@@ -9,8 +9,10 @@ export interface Design {
   wave_y: number;
   wave_height: number;
   font_size: number;
-  subtitle_font: "sans" | "serif" | "mono";
-  title_font: "sans" | "serif" | "mono";
+  subtitle_font:
+    "sans" | "serif" | "mono" | "nunito" | "fredoka" | "quicksand" | "poppins";
+  title_font: Design["subtitle_font"];
+  title_bold: boolean;
   title_font_size: number;
   logo_position:
     | "top-left"

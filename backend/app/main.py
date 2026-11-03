@@ -27,7 +27,7 @@ async def lifespan(app):
     await asyncio.to_thread(store.close)
 
 
-app = FastAPI(title="EasyPodcast", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.4.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -69,7 +69,7 @@ async def invalid(request, exc):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "0.3.0"}
+    return {"status": "ok", "version": "0.4.0"}
 
 
 @app.get("/api/capabilities")
@@ -400,13 +400,13 @@ def approve_subtitles(job=Depends(get_job)):
 
 
 @app.get("/api/fonts/{key}")
-def font_file(key: str):
+def font_file(key: str, bold: bool = False):
     from .fonts import FONTS, font_path
 
     if key not in FONTS:
         raise HTTPException(404, "Fuente no disponible.")
     return FileResponse(
-        font_path(key), media_type="font/ttf", headers={"Cache-Control": "public, max-age=86400"}
+        font_path(key, bold), media_type="font/ttf", headers={"Cache-Control": "public, max-age=86400"}
     )
 
 

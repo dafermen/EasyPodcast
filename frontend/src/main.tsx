@@ -756,6 +756,7 @@ export function App() {
                           fontFamily:
                             fontFamilies[design?.title_font ?? "sans"],
                           fontSize: `${(design?.title_font_size ?? 64) / 19.2}cqw`,
+                          fontWeight: (design?.title_bold ?? true) ? 700 : 400,
                         }}
                       >
                         {design?.title}
@@ -899,7 +900,7 @@ export function App() {
       </main>
       <footer>
         Hecho para escuchar. Diseñado para compartir.
-        <span>EasyPodcast · 0.3.0</span>
+        <span>EasyPodcast · 0.4.0</span>
       </footer>
     </div>
   );

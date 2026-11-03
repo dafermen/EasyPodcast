@@ -5,6 +5,35 @@ import userEvent from "@testing-library/user-event";
 import { TypographyControls, logoStyle } from "./TypographyControls";
 import type { Design } from "./types";
 afterEach(cleanup);
+it("offers friendly fonts and an independent bold switch", async () => {
+  const change = vi.fn();
+  render(
+    <TypographyControls
+      design={
+        {
+          font_size: 48,
+          title_font: "sans",
+          subtitle_font: "sans",
+          title_bold: true,
+          logo_position: "top-right",
+        } as Design
+      }
+      disabled={false}
+      hasLogo={false}
+      change={change}
+    />,
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByLabelText("Negrilla en el título"));
+  expect(change).toHaveBeenCalledWith("title_bold", false);
+  for (const family of ["nunito", "fredoka", "quicksand", "poppins"]) {
+    await user.selectOptions(
+      screen.getByLabelText("Fuente del título"),
+      family,
+    );
+    expect(change).toHaveBeenCalledWith("title_font", family);
+  }
+});
 it("changes font, title size and logo position independently", async () => {
   const change = vi.fn();
   const design = {

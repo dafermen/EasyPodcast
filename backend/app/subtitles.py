@@ -92,10 +92,10 @@ def escape_ass(text: str) -> str:
     return text.replace("\\", "\\\u2060").replace("{", r"\{").replace("}", r"\}").replace("\n", r"\N")
 
 
-def wrap_text(text, font_key, size, width):
+def wrap_text(text, font_key, size, width, bold=False):
     from PIL import ImageFont
 
-    font = ImageFont.truetype(str(font_path(font_key)), size)
+    font = ImageFont.truetype(str(font_path(font_key, bold)), size)
     output = []
     for paragraph in text.splitlines():
         remaining = paragraph
@@ -172,13 +172,13 @@ WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,{FONTS[design.subtitle_font][0]},{design.font_size},{color},&H000000FF,&H00101522,&H80000000,0,0,0,0,100,100,0,0,1,{design.outline},1,2,{margin},{margin},{design.subtitle_margin},1
-Style: Title,{FONTS[design.title_font][0]},{design.title_font_size},&H00FFFFFF,&H000000FF,&H00101522,&H80000000,-1,0,0,0,100,100,0,0,1,3,0,8,120,120,100,1
+Style: Title,{FONTS[design.title_font][0]},{design.title_font_size},&H00FFFFFF,&H000000FF,&H00101522,&H80000000,{-1 if design.title_bold else 0},0,0,0,100,100,0,0,1,3,0,8,120,120,100,1
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events = []
     if design.title:
-        lines = wrap_text(design.title, design.title_font, design.title_font_size, 1600)
+        lines = wrap_text(design.title, design.title_font, design.title_font_size, 1600, design.title_bold)
         if len(lines) > 3 or 100 + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
             raise ValueError("El título no cabe sobre el visualizador: reduce su tamaño o acorta el texto.")
         title = "\n".join(lines)

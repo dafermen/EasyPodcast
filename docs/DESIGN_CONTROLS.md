@@ -13,3 +13,7 @@ Pulsa **Guardar diseño** tras ajustar. Se invalidan pruebas y videos anteriores
 API: Design añade title_font, subtitle_font (sans/serif/mono), title_font_size, logo_position y logo_margin; font_size sigue siendo el tamaño de subtítulos. `/api/fonts/{key}` sirve únicamente las fuentes incluidas mediante una lista permitida. El logo del trabajo se consulta en `/api/jobs/{id}/artifacts/logo`, con la misma autenticación que el resto de medios. No se admiten nombres de fuentes, rutas o filtros arbitrarios del cliente.
 
 Validación: 56 pruebas backend y 9 frontend pasaron en Windows. Incluye estilos ASS, límites, rutas de fuentes, acceso al logo y renders FFmpeg reales con Serif en título, Mono en subtítulos y logos arriba a la izquierda/abajo a la derecha, comprobados por píxeles. macOS nativo y preferencias visuales del usuario siguen pendientes de revisión.
+
+## Fuentes amigables y negrilla (0.4.0)
+
+Se añaden Nunito (redondeada), Fredoka (expresiva), Rounded (derivada de Quicksand) y Poppins (moderna). Están disponibles tanto para título como para subtítulos. La casilla Negrilla en el título selecciona archivos Regular/Bold de peso 400/700. El peso se comparte entre la vista del navegador, la medición del ajuste de líneas y ASS/FFmpeg. Los diseños JSON conservan title_bold; si se omite, sigue siendo true para mantener el título anterior. No se descargan fuentes durante el uso: todos los archivos y licencias están incluidos.

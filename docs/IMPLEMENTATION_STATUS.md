@@ -1,3 +1,11 @@
+# Estado actual · 0.4.0
+
+Casilla Negrilla en el título y siete familias disponibles: DejaVu Sans/Serif/Mono, Nunito, Fredoka, Rounded (derivada de Quicksand, renombrada por licencia) y Poppins. Archivos Regular/Bold reales, servidos localmente, usados por medición de título, vista de composición y FFmpeg. Nuevas fuentes también en subtítulos. Licencias incluidas y JSON anterior compatible (title_bold=true por defecto).
+
+Windows: 69 pruebas backend y 10 frontend pasaron, build correcto. Renders reales para las cuatro familias nuevas en ambos pesos; diferencia visual comprobada por píxeles en la región del título. macOS y selección estética final del usuario pendientes. La mejora de guía después de Guardar diseño continúa pendiente en ROADMAP.md y no se implementó en este bloque.
+
+---
+
 # Estado actual · 0.3.0
 
 Tipografía y logo: fuente y tamaño independientes para título/subtítulos, tres familias DejaVu incluidas, seis posiciones y margen de logo. Vista previa con fuentes locales y logo; ASS/FFmpeg usan la misma configuración. Compatibilidad con JSON anteriores mediante defaults. Ver docs/DESIGN_CONTROLS.md.
@@ -63,3 +71,5 @@ Clonar repositorio, instalar dependencias nativas, crear .venv, npm ci/build, do
 ## CI remoto verificado
 
 GitHub Actions pasó en Ubuntu con Python 3.12 y Node 24 para el commit 581d670: doctor, 35 pruebas backend con FFmpeg real, Ruff, 5 pruebas frontend, formato y build. [Ejecución 41440870852](https://github.com/dafermen/EasyPodcast/actions/runs/41440870852). Esto verifica Linux en CI, no sustituye la prueba nativa de macOS.
+
+Verificación visual 0.4.0: navegador real alternó negrilla, seleccionó Fredoka/Nunito y guardó el diseño. document.fonts confirmó ambos pesos/fuentes cargados localmente. Captura docs/screenshots/friendly-fonts.png. Servicio /api/health versión 0.4.0 comprobado activo.

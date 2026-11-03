@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+FontKey = Literal["sans", "serif", "mono", "nunito", "fredoka", "quicksand", "poppins"]
+
 
 class Design(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
@@ -15,8 +17,9 @@ class Design(BaseModel):
     wave_y: float = Field(0.52, ge=0.3, le=0.65)
     wave_height: float = Field(0.16, ge=0.06, le=0.22)
     font_size: int = Field(48, ge=28, le=72)
-    subtitle_font: Literal["sans", "serif", "mono"] = "sans"
-    title_font: Literal["sans", "serif", "mono"] = "sans"
+    subtitle_font: FontKey = "sans"
+    title_font: FontKey = "sans"
+    title_bold: bool = True
     title_font_size: int = Field(64, ge=28, le=110)
     logo_position: Literal[
         "top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"

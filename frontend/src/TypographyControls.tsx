@@ -4,11 +4,19 @@ export const fontFamilies = {
   sans: "EpisodeSans",
   serif: "EpisodeSerif",
   mono: "EpisodeMono",
+  nunito: "EpisodeNunito",
+  fredoka: "EpisodeFredoka",
+  quicksand: "EpisodeQuicksand",
+  poppins: "EpisodePoppins",
 };
 export const fontChoices = [
   ["sans", "Sans · DejaVu Sans"],
   ["serif", "Serif · DejaVu Serif"],
   ["mono", "Monoespaciada · DejaVu Sans Mono"],
+  ["nunito", "Nunito · redondeada y amable"],
+  ["fredoka", "Fredoka · juvenil y expresiva"],
+  ["quicksand", "Rounded · basada en Quicksand"],
+  ["poppins", "Poppins · moderna y clara"],
 ] as const;
 export const logoChoices = [
   ["top-left", "Arriba a la izquierda"],
@@ -53,6 +61,15 @@ export function TypographyControls({
   return (
     <fieldset className="typography-controls">
       <legend>Tipografía y logo</legend>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={design.title_bold ?? true}
+          disabled={disabled}
+          onChange={(e) => change("title_bold", e.target.checked)}
+        />
+        <strong>Negrilla en el título</strong>
+      </label>
       <div className="pair">
         <label>
           Fuente del título

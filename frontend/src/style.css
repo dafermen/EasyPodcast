@@ -13,6 +13,72 @@
   src: url("/api/fonts/mono") format("truetype");
   font-display: swap;
 }
+@font-face {
+  font-family: EpisodeSans;
+  src: url("/api/fonts/sans?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeSerif;
+  src: url("/api/fonts/serif?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeMono;
+  src: url("/api/fonts/mono?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeNunito;
+  src: url("/api/fonts/nunito") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeNunito;
+  src: url("/api/fonts/nunito?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeFredoka;
+  src: url("/api/fonts/fredoka") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeFredoka;
+  src: url("/api/fonts/fredoka?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeQuicksand;
+  src: url("/api/fonts/quicksand") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodeQuicksand;
+  src: url("/api/fonts/quicksand?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodePoppins;
+  src: url("/api/fonts/poppins") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: EpisodePoppins;
+  src: url("/api/fonts/poppins?bold=true") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
 .typography-controls {
   border: 1px solid #d8ded7;
   border-radius: 9px;

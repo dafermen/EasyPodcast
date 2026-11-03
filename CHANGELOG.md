@@ -25,3 +25,7 @@ Consultar IMPLEMENTATION_STATUS para evidencia y pendientes; este registro no ce
 - Tres familias DejaVu incluidas y vista de composición con fuentes locales.
 - Seis posiciones de logo y margen configurable; logo visible en composición.
 - 56 pruebas backend y 9 frontend; renders y recorrido de navegador verificados.
+
+## 0.4.0 · Fuentes amigables y negrilla (2026-11-03)
+
+Diseño → Tipografía y logo incorpora Negrilla en el título y fuentes Nunito, Fredoka, Rounded y Poppins. Regular/Bold locales; JSON conserva title_bold (true por defecto). 69 pruebas backend y 10 frontend pasaron; pruebas multimedia de las cuatro familias en ambos pesos. Ver docs/DESIGN_CONTROLS.md y THIRD_PARTY_NOTICES.md para detalles/licencias.
