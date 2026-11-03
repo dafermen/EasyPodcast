@@ -1,6 +1,6 @@
 # Avisos de terceros
 
-La licencia del código EasyPodcast queda pendiente de decisión de su propietario. No se crea una licencia supuesta.
+El código propio de EasyPodcast se distribuye bajo la licencia MIT, elegida por su propietario el 3 de noviembre de 2026. Consulta LICENSE. Esta elección no modifica las licencias ni los avisos de fuentes, modelos y dependencias de terceros.
 
 ## Fuente incluida
 

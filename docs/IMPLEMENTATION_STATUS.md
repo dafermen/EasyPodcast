@@ -62,7 +62,7 @@ Benchmark real: 1.800 s de audio sintético exportados en **720,20 s (12 min)**,
 - Layout CSS aproximado; prueba FFmpeg es la referencia. Preset IA de presentadores fijo mujer izquierda/hombre derecha; no hay editor de personajes.
 - Algunos textos UI permanecen en App; extracción completa y división en componentes pueden hacerse al crecer.
 - Benchmark no valida voz humana, todos los codecs posibles ni 120 minutos. La revisión editorial corresponde al creador.
-- Licencia del propietario pendiente; avisos de fuente/FFmpeg documentados.
+- Código propio bajo MIT por decisión del propietario (2026-11-03); fuentes/FFmpeg y demás terceros conservan sus licencias.
 
 ## Próximo trabajo en Mac
 

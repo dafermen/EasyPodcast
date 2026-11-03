@@ -7,5 +7,5 @@ Mantén docs/IMPLEMENTATION_STATUS.md con evidencia real. No declares probado ma
 Un solo proceso Uvicorn y un worker de render. Bind 127.0.0.1.
 Nunca incluyas claves, medios personales, temporales o resultados en Git.
 No hagas llamadas pagadas en tests ni publiques videos o despliegues automáticamente.
-No elijas licencia del propietario. No borres medios fuera de la raíz temporal administrada.
+La licencia del código propio es MIT, elegida por el propietario. Conserva LICENSE y los avisos/licencias de terceros; no cambies la licencia sin instrucción del propietario. No borres medios fuera de la raíz temporal administrada.
 Verificación: backend `python -m pytest -q`; frontend `npm test` y `npm run build`.

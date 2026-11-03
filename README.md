@@ -82,7 +82,7 @@ Los medios se escriben temporalmente en tu equipo, fuera del repositorio. Vencen
 
 Documentos: [producto](docs/PRODUCT_SPEC.md), [arquitectura](docs/ARCHITECTURE.md), [desarrollo](docs/DEVELOPMENT.md), [guía junior](docs/JUNIOR_GUIDE.md), [API](docs/API.md), [usuario](docs/USER_GUIDE.md), [privacidad](docs/PRIVACY_AND_FILES.md), [pruebas](docs/TESTING.md), [roadmap](docs/ROADMAP.md).
 
-La aplicación está preparada para loopback, no para exposición pública. La licencia del código está pendiente de decisión del propietario; consulta [avisos](THIRD_PARTY_NOTICES.md).
+La aplicación está preparada para loopback, no para exposición pública. El código propio se distribuye bajo la [licencia MIT](LICENSE). Fuentes y dependencias mantienen sus licencias; consulta [avisos](THIRD_PARTY_NOTICES.md).
 
 ## Generar subtítulos desde audio
 
