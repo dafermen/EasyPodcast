@@ -1,5 +1,13 @@
 /** Full episode settings contract. Runtime validation belongs to backend Pydantic models. */
 export interface Design {
+  /** Actual encoded frame shape; older JSON defaults to landscape. */
+  output_format?: "landscape" | "portrait" | "square";
+  /** Free top-left x as a frame fraction; null restores the preset. */
+  logo_x?: number | null;
+  /** Free top-left y as a frame fraction; null restores the preset. */
+  logo_y?: number | null;
+  /** Scale of the normalized logo, bounded 0.25–2.5. */
+  logo_scale?: number;
   /** Episode title drawn in the video; never translated by the interface locale. */
   title: string;
   /** Optional visual context sent only to an explicitly selected image provider. */
@@ -78,6 +86,10 @@ export interface Design {
 }
 /** Token-free polling snapshot; the upload response supplies a separate secret token. */
 export interface Job {
+  /** Durable library identity, independent of this disposable workspace ID. */
+  project_id?: string | null;
+  /** Visible failure to write a recovery checkpoint; never assume persistence after this error. */
+  archive_error?: string | null;
   id: string;
   state: string;
   phase: string;

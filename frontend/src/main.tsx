@@ -1,3 +1,11 @@
+import {
+  ProjectLibrary,
+  resumeStep,
+  DraftAutosave,
+  BrandTemplates,
+} from "./ProjectLibrary";
+import { Preflight } from "./Preflight";
+import { CanvasEditor, frameSize } from "./CanvasEditor";
 import { t } from "./i18n";
 import { ThemeSelector } from "./ThemeSelector";
 import { DesignEntry } from "./DesignEntry";
@@ -10,11 +18,7 @@ import { getText } from "./text";
 import { LanguageSelector } from "./LanguageSelector";
 import { useLocale, setLocale } from "./i18n";
 import "./style.css";
-import {
-  TypographyControls,
-  fontFamilies,
-  logoStyle,
-} from "./TypographyControls";
+import { TypographyControls } from "./TypographyControls";
 import { SubtitleReview } from "./SubtitleReview";
 
 /** Own the current job, token, editable design and four-step workflow; subscribe to UI locale changes. */
@@ -24,6 +28,8 @@ export function App() {
   useEffect(() => {
     setLocale(locale);
   }, [locale]);
+  const [libraryRevision, setLibraryRevision] = useState(0);
+  const [editingSubtitles, setEditingSubtitles] = useState(false);
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [token, setToken] = useState("");
@@ -112,6 +118,7 @@ export function App() {
         data,
       );
       setToken(result.token);
+      setLibraryRevision((n) => n + 1);
       setUnavailable(false);
       setJob(result);
       setDesign(result.config);
@@ -119,6 +126,7 @@ export function App() {
       setDesignMethod("manual");
       setImportedDesign(false);
       setSavedDesign(false);
+      setStart(0);
       setStep(subtitleMode === "generate" ? 0 : 1);
     });
   }
@@ -141,6 +149,7 @@ export function App() {
     setDesign(result.config);
     setDirty(false);
     setSavedDesign(true);
+    setLibraryRevision((n) => n + 1);
     setRevision((r) => r + 1);
   }
   /** Read a bounded design JSON, validate it through the backend and retain the previous design on failure. */
@@ -248,6 +257,38 @@ export function App() {
             </button>
           ))}
         </nav>
+        <ProjectLibrary
+          disabled={busy || active}
+          revision={libraryRevision}
+          beforeOpen={async () => {
+            if (job?.project_id && design && dirty) {
+              await api("/library/session", undefined, "POST");
+              await api(
+                `/projects/${job.project_id}/draft`,
+                undefined,
+                "PUT",
+                JSON.stringify({ design, base: job.config }),
+              );
+            }
+          }}
+          onOpen={(result) => {
+            setJob(result);
+            setToken(result.token);
+            setDesign(result.config);
+            setDirty(false);
+            setUnavailable(false);
+            setSavedDesign(false);
+            setDesignMethod("manual");
+            setImportedDesign(false);
+            setEditingSubtitles(false);
+            setStart(0);
+            setRevision((n) => n + 1);
+            setStep(resumeStep(result));
+          }}
+        />
+        {job && design && (
+          <DraftAutosave job={job} design={design} dirty={dirty} />
+        )}
         {error && (
           <div className="alert error" role="alert">
             {t(error)}
@@ -463,6 +504,55 @@ export function App() {
                   disabled={disabled}
                   onImport={(file) => perform(() => importDesign(file))}
                 />
+                <label>
+                  {t("Output format")}
+                  <select
+                    value={design.output_format ?? "landscape"}
+                    disabled={disabled}
+                    onChange={(e) =>
+                      change(
+                        "output_format",
+                        e.target.value as Design["output_format"],
+                      )
+                    }
+                  >
+                    <option value="landscape">16:9 · 1920 × 1080</option>
+                    <option value="portrait">9:16 · 1080 × 1920</option>
+                    <option value="square">1:1 · 1080 × 1080</option>
+                  </select>
+                </label>
+                <p className="note">
+                  {t(
+                    "Drag the title or logo on the canvas. Use arrow keys for precise moves. Resize the title with its corner handle; adjust logo scale below.",
+                  )}
+                </p>
+                <BrandTemplates
+                  job={job}
+                  token={token}
+                  dirty={dirty}
+                  disabled={disabled}
+                  onChange={(result) => {
+                    setJob(result);
+                    setDesign(result.config);
+                    setDirty(false);
+                    setRevision((n) => n + 1);
+                  }}
+                />
+                <button
+                  disabled={disabled}
+                  onClick={() => setEditingSubtitles((v) => !v)}
+                >
+                  {t("Review or edit subtitles")}
+                </button>
+                {editingSubtitles && (
+                  <SubtitleReview
+                    job={job}
+                    token={token}
+                    onChange={setJob}
+                    onContinue={() => setEditingSubtitles(false)}
+                  />
+                )}
+
                 {(designMethod === "manual" || importedDesign) && (
                   <>
                     <label>
@@ -802,6 +892,7 @@ export function App() {
             )}
             {job && step === 2 && (
               <div className="fields">
+                <Preflight job={job} token={token} dirty={dirty} />
                 <p>
                   {" "}
                   {t(
@@ -856,12 +947,14 @@ export function App() {
                     "Exporta el episodio completo con el diseño de tu prueba aprobada.",
                   )}{" "}
                 </p>
+                <Preflight job={job} token={token} dirty={dirty} />
                 <div className="output-spec">
                   {" "}
                   {t("MP4")}{" "}
                   <span>
                     {" "}
-                    {t("1920 × 1080 · 30 fps")} <br /> {t("H.264 + AAC")}{" "}
+                    {frameSize(design).join(" × ")} · 30 fps <br />{" "}
+                    {t("H.264 + AAC")}{" "}
                   </span>
                 </div>
                 <button
@@ -881,6 +974,12 @@ export function App() {
                     {t("Descargar MP4")}{" "}
                   </a>
                 )}
+                <a
+                  className="button"
+                  href={artifactUrl(job, "subtitles", true)}
+                >
+                  {t("Descargar SRT")}
+                </a>
                 <a
                   className="button"
                   href={artifactUrl(job, "background", true, revision)}
@@ -904,9 +1003,13 @@ export function App() {
           <section className="preview-panel" aria-label={t("Previsualización")}>
             <div className="preview-top">
               <span>{t("LIENZO DEL EPISODIO")}</span>
-              <span>{t("16:9 / 1080p")}</span>
+              <span>{frameSize(design).join(" × ")}</span>
             </div>
-            <div className="canvas">
+            <div
+              className="canvas"
+              data-format={design?.output_format ?? "landscape"}
+              style={{ aspectRatio: frameSize(design).join(" / ") }}
+            >
               {job && !active ? (
                 <>
                   {job.artifacts.includes("preview") && step >= 2 ? (
@@ -918,53 +1021,15 @@ export function App() {
                     />
                   ) : (
                     <>
-                      <img
-                        src={artifactUrl(job, "background", false, revision)}
-                        alt={t("Fondo actual del episodio")}
-                      />
-                      <div
-                        className="canvas-title"
-                        style={{
-                          fontFamily:
-                            fontFamilies[design?.title_font ?? "sans"],
-                          fontSize: `${(design?.title_font_size ?? 64) / 19.2}cqw`,
-                          fontWeight: (design?.title_bold ?? true) ? 700 : 400,
-                          top: `${(100 + (design?.title_offset_y ?? 0)) / 10.8}%`,
-                          left: `${(960 + (design?.title_offset_x ?? 0)) / 19.2}%`,
-                          right: "auto",
-                          transform: "translateX(-50%)",
-                          width: `${Math.min(1600, 2 * (840 - Math.abs(design?.title_offset_x ?? 0))) / 19.2}%`,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {design?.title}
-                      </div>
-                      {design && job.artifacts.includes("logo") && (
-                        <img
-                          className="canvas-logo"
-                          src={artifactUrl(job, "logo", false, revision)}
-                          alt={t("Logo del episodio")}
-                          style={logoStyle(design)}
+                      {design && (
+                        <CanvasEditor
+                          job={job}
+                          design={design}
+                          revision={revision}
+                          disabled={disabled || step !== 1}
+                          change={change}
                         />
                       )}
-                      <div className="safe-area">
-                        {" "}
-                        {t(
-                          "Zona del visualizador · se renderiza con tu audio",
-                        )}{" "}
-                      </div>
-                      <div
-                        className="sample-caption"
-                        style={{
-                          fontFamily:
-                            fontFamilies[design?.subtitle_font ?? "sans"],
-                          fontSize: `${(design?.font_size ?? 48) / 19.2}cqw`,
-                          bottom: `${(design?.subtitle_margin ?? 80) / 10.8}%`,
-                        }}
-                      >
-                        {" "}
-                        {t("Vista de composición aproximada")}{" "}
-                      </div>
                     </>
                   )}
                 </>
@@ -1037,7 +1102,9 @@ export function App() {
                   {new Date(job.expires_at).toLocaleString(
                     locale === "en" ? "en-US" : "es-ES",
                   )}
-                  {t(". Al reiniciar el backend se pierden los trabajos.")}{" "}
+                  {t(
+                    ". Temporary session expires; saved projects remain in the Library.",
+                  )}{" "}
                 </p>
                 <button
                   className="danger"
@@ -1049,11 +1116,12 @@ export function App() {
                       setToken("");
                       setDesign(null);
                       setStep(0);
+                      setLibraryRevision((n) => n + 1);
                     })
                   }
                 >
                   {" "}
-                  {t("Eliminar episodio y archivos")}{" "}
+                  {t("Close episode (saved project stays in Library)")}{" "}
                 </button>
               </div>
             )}
@@ -1100,7 +1168,7 @@ export function App() {
       <footer>
         {" "}
         {t("Hecho para escuchar. Diseñado para compartir.")}{" "}
-        <span>{t("EasyPodcast · 0.4.1")}</span>
+        <span>{t("EasyPodcast · 0.5.0")}</span>
       </footer>
     </div>
   );

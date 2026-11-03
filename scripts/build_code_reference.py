@@ -7,6 +7,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ROLES = {
+    "identifier": "Allowlisted UUID key for a durable project/template, never an arbitrary path.",
+    "connection": "Short-lived SQLite connection, committed and closed by the context manager.",
+    "snapshot": "Portable project metadata and media fingerprints, excluding secret tokens/process state.",
+    "fingerprints": "Size/mtime pairs used to avoid recopying unchanged media after each settings save.",
+    "draft": "Recoverable appearance edits kept separate from explicitly saved render configuration.",
+    "base": "Last saved Design version used to reject obsolete in-flight autosave requests.",
+    "signature": "Serialized content version; identical polling snapshots do not trigger repeated validation.",
+    "naturalLogo": "Actual normalized logo dimensions used to match browser and FFmpeg scaling.",
+    "frame": "Selected output width/height in pixels, independent of displayed canvas size.",
+    "box": "Logo's top-left and dimensions in output pixels, including free-position clamping.",
+    "report": "Preflight readiness, blockers and warnings measured from actual selected fonts.",
     "job": "Temporary episode with metadata, files, approvals and cancellation resources.",
     "jobs": "In-memory registry indexed by random job ID; lost on restart.",
     "jid": "Random public job ID; a separate secret token is required.",

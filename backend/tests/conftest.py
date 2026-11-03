@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "library_root", tmp_path / "library")
     monkeypatch.setattr(store, "root", tmp_path / "jobs")
     monkeypatch.setattr(settings, "temp_root", tmp_path / "jobs")
     monkeypatch.setattr(settings, "min_free_bytes", 0)

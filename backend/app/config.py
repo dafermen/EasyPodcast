@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parents[2] / ".env", extra="ignore")
     # FFMPEG: see docs/CONFIGURATION.md for units, defaults and operational effects.
+    library_root: Path = Path.home() / ".easypodcast" / "library"
     ffmpeg: str = "ffmpeg"
     # FFPROBE: see docs/CONFIGURATION.md for units, defaults and operational effects.
     ffprobe: str = "ffprobe"

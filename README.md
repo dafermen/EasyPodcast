@@ -54,13 +54,15 @@ Create fresh dependencies on each OS; never copy .venv or node_modules between c
 2. Review generated subtitles before approving them. Word timestamps are estimates.
 3. Design: configure manually or import a previously exported design JSON. Adjust typography, title position, visualizer and logo. Save changes.
 4. Select **Approve background and continue**. Generate and watch a preview of up to 20 seconds; then approve it.
-5. Export the full episode and download the MP4, background and design JSON.
+5. Export the full episode and download the MP4, SRT, background and design JSON.
+
+New studio tools: reusable brand templates with background/logo; debounced design recovery drafts; title/logo dragging, resize handles and alignment guides; subtitle cue timeline with audio playback; pre-export layout checks; 16:9, 9:16 and square video formats. See [saved projects and recovery](docs/PROJECTS.md).
 
 Changing settings invalidates earlier previews. A design JSON contains settings, not media or a resumable session. There is no lip synchronization or channel publishing.
 
 ## Files, sessions and costs
 
-Jobs live in RAM and temporary storage, not a database. Completed jobs are retained for 24 hours by default, failed/cancelled jobs for 15 minutes, active operations for up to 4 hours. Polling does not extend expiry. Restarting the backend destroys jobs; reloading the page loses its in-memory job token. Keep your originals and download results promptly.
+Editing/render sessions still use RAM and temporary workspaces (24-hour completed, 15-minute failed and four-hour active defaults). A separate local SQLite library now keeps project inputs, settings, subtitles and completed artifacts across reloads/restarts. Open **Project library → Continue project** to recover a session; Duplicate creates an independent project. Keep originals and backups: local persistence is not cloud synchronization or protection from disk failure.
 
 Audio, subtitles and local transcription stay on the computer. Model files download from Hugging Face on first use and are cached. Optional image generation sends only visual context to OpenAI after an explicit action, can cost money and requires backend configuration. No paid call occurs at startup or in tests.
 
@@ -69,6 +71,7 @@ Audio, subtitles and local transcription stay on the computer. Model files downl
 - [User guide](docs/USER_GUIDE.md) and [design controls](docs/DESIGN_CONTROLS.md)
 - [Start learning the code](docs/JUNIOR_GUIDE.md), [development](docs/DEVELOPMENT.md) and [complete source reference](docs/CODE_REFERENCE.md)
 - [Architecture](docs/ARCHITECTURE.md), [API](docs/API.md) and [configuration](docs/CONFIGURATION.md)
+- [Projects, autosave and templates](docs/PROJECTS.md)
 - [Localization and themes](docs/LOCALIZATION.md), [transcription](docs/TRANSCRIPTION.md) and [image provider](docs/OPENAI_PROVIDER.md)
 - [Testing](docs/TESTING.md), [privacy/files](docs/PRIVACY_AND_FILES.md), [status](docs/IMPLEMENTATION_STATUS.md), [roadmap](docs/ROADMAP.md), [product specification](docs/PRODUCT_SPEC.md)
 - [Contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md) and [third-party notices](THIRD_PARTY_NOTICES.md)

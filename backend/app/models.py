@@ -26,6 +26,10 @@ class Design(BaseModel):
 
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     # Episode title drawn in the video; never translated by the interface locale.
+    output_format: Literal["landscape", "portrait", "square"] = "landscape"
+    logo_x: float | None = Field(None, ge=0, le=1)
+    logo_y: float | None = Field(None, ge=0, le=1)
+    logo_scale: float = Field(1, ge=0.25, le=2.5)
     title: str = Field("My episode", max_length=120)
     # Optional visual context sent only to an explicitly selected image provider.
     description: str = Field("", max_length=1200)
@@ -84,11 +88,19 @@ class Design(BaseModel):
     # RGB hex color for the currently active recognized word.
     highlight_color: str = Field("#FFD54A", pattern=r"^#[0-9a-fA-F]{6}$")
 
+    @property
+    def frame_size(self):
+        """Return output dimensions; all layout units are pixels in this frame."""
+        return {"landscape": (1920, 1080), "portrait": (1080, 1920), "square": (1080, 1080)}[
+            self.output_format
+        ]
+
     @model_validator(mode="after")
     def safe_layout(self):
         """Reject subtitle and visualizer overlap using canvas-coordinate layout estimates."""
-        subtitle_top = 1080 - self.subtitle_margin - self.font_size * self.max_lines * 1.25 - 20
-        if 1080 * (self.wave_y + self.wave_height) > subtitle_top:
+        height = self.frame_size[1]
+        subtitle_top = height - self.subtitle_margin - self.font_size * self.max_lines * 1.25 - 20
+        if height * (self.wave_y + self.wave_height) > subtitle_top:
             raise ValueError("Onda y subtítulos se superponen: reduce altura/posición, letra o líneas.")
         return self
 
@@ -117,3 +129,18 @@ class SubtitleEdit(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # Edited UTF-8 SRT payload; saving edits drops estimated word alignment.
     srt: str = Field(min_length=1, max_length=5 * 1024**2)
+
+
+class DraftRequest(BaseModel):
+    """Version a recovery draft against the last saved design to reject stale in-flight autosaves."""
+
+    model_config = ConfigDict(extra="forbid")
+    design: Design
+    base: Design
+
+
+class TemplateRequest(BaseModel):
+    """Optional human-readable brand name; never used as a directory or filename."""
+
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(min_length=1, max_length=120)

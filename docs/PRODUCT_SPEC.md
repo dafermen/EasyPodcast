@@ -18,4 +18,8 @@ Defaults: 1 GiB audio, 5 MiB SRT, 20 MiB per image, 25 million pixels, two-hour 
 
 ## Outside current scope
 
-No lip synchronization, speaker diarization, automatic subtitle translation, cloud database/session recovery, Internet hosting/authentication, YouTube publishing, Xcode integration or guaranteed identical AI characters. No claim of native macOS verification or long-form human speech transcription accuracy yet.
+No lip synchronization, speaker diarization, automatic subtitle translation, cloud synchronization, Internet hosting/authentication, YouTube publishing, Xcode integration or guaranteed identical AI characters. No claim of native macOS verification or long-form human speech transcription accuracy yet.
+
+## Local production tools
+
+Durable project history/reopen/duplicate, acknowledged design recovery drafts, reusable branding including media, pointer/keyboard title and logo manipulation with resize handles/guides, audio-assisted subtitle cue editing, pre-export layout checks and SRT download are implemented. Output formats: landscape 1920 × 1080, portrait 1080 × 1920 and square 1080 × 1080 at 30 fps. Each format uses its own frame-coordinate composition and a newly approved preview. Running jobs are not resumed automatically after interruption.

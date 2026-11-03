@@ -43,3 +43,22 @@ with httpx.Client(base_url="http://127.0.0.1:8000", headers={"Origin": "http://1
 ```
 
 Store the token only as long as needed. JSON export contains no secret key, media file, token or resumable session.
+
+## Durable studio endpoints
+
+POST /library/session requires an allowed Origin and sets the HttpOnly `ep_library` cookie scoped to /api. The following library endpoints require it; job-specific routes additionally require X-Job-Token. A cookie-only artifact request can access original audio for the cue editor, using the same lease/Range behavior as other media.
+
+| Method and path | Behavior |
+| --- | --- |
+| GET /projects | Cover IDs, title, created/updated Unix timestamps, checkpoint/live state and recovery-draft indicator; no tokens/paths |
+| GET /projects/{id}/thumbnail | Small normalized cover image |
+| POST /projects/{id}/open | Reuse an idle session or rebuild from durable data; return Job plus in-memory token and media cookie |
+| POST /projects/{id}/duplicate | Create an independent saved project and workspace |
+| PUT /projects/{id}/draft | Body {design: Design, base: Design}; save only if base matches the last saved config; saved=false indicates a stale request |
+| GET /templates | Local brand template summaries |
+| POST /jobs/{id}/templates | Optional JSON {"title":"Brand name"}; save clean visual settings and background/logo, without audio/SRT |
+| POST /jobs/{id}/templates/{templateId} | Apply brand media/settings while retaining episode title/description/subtitles; clear approvals |
+| GET /jobs/{id}/preflight | {ready, blockers, warnings, width, height}; real font/ASS checks, no encoder/provider call |
+| GET /jobs/{id}/artifacts/audio | Original selected audio input for subtitle playback; token or media cookie required |
+
+Job snapshots add project_id and archive_error. Design adds output_format (landscape/portrait/square), logo_x/logo_y normalized free top-left coordinates (null restores presets), and logo_scale 0.25–2.5. Older design files default to landscape, preset logo placement and scale 1. Subtitle GET also returns structured cues. DELETE job closes only its temporary workspace; the durable project remains. A failed archival checkpoint can block a destructive close with 507 so the only working copy is not discarded.

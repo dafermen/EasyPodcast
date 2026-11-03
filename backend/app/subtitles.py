@@ -125,7 +125,9 @@ def wrap_text(text, font_key, size, width, bold=False):
 
 def wrap_caption(text, design):
     """Wrap subtitle text and reject layouts exceeding the selected line limit."""
-    output = wrap_text(text, design.subtitle_font, design.font_size, 1920 * design.subtitle_width - 40)
+    output = wrap_text(
+        text, design.subtitle_font, design.font_size, design.frame_size[0] * design.subtitle_width - 40
+    )
     if len(output) > design.max_lines:
         raise ValueError(
             f"Un subtítulo requiere {len(output)} líneas. Acorta el SRT, reduce la letra o permite tres líneas."
@@ -182,11 +184,12 @@ def make_ass(cues, design, duration: float) -> str:
     """Build the complete subtitle/title ASS document at 1920 by 1080 resolution."""
     color = design.subtitle_color.lstrip("#")
     color = "&H00" + color[4:6] + color[2:4] + color[0:2]
-    margin = round(1920 * (1 - design.subtitle_width) / 2)
+    frame_width, frame_height = design.frame_size
+    margin = round(frame_width * (1 - design.subtitle_width) / 2)
     header = f"""[Script Info]
 ScriptType: v4.00+
-PlayResX: 1920
-PlayResY: 1080
+PlayResX: {frame_width}
+PlayResY: {frame_height}
 WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
@@ -197,10 +200,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events = []
     if design.title:
-        x, y = 960 + design.title_offset_x, 100 + design.title_offset_y
-        width = min(1600, 2 * (min(x, 1920 - x) - 120))
+        x, y = frame_width // 2 + design.title_offset_x, 100 + design.title_offset_y
+        width = min(1600, 2 * (min(x, frame_width - x) - 120))
+        if width < 80 or y < 0:
+            raise ValueError("Title is outside the frame. Reduce its offset.")
         lines = wrap_text(design.title, design.title_font, design.title_font_size, width, design.title_bold)
-        if len(lines) > 3 or y + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
+        if (
+            len(lines) > 3
+            or y + len(lines) * design.title_font_size * 1.3 > frame_height * design.wave_y - 20
+        ):
             raise ValueError(
                 "El título no cabe sobre el visualizador: reduce su tamaño, acorta el texto o ajusta su posición."
             )

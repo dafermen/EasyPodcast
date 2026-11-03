@@ -1,6 +1,6 @@
 # Configuration reference
 
-Only the backend reads .env at the repository root. Pydantic Settings also reads environment variables. Never commit .env. Defaults below come from backend/app/config.py; actual overrides may differ. A backend restart is needed after server configuration changes and destroys temporary jobs.
+Only the backend reads .env at the repository root. Pydantic Settings also reads environment variables. Never commit .env. Defaults below come from backend/app/config.py; actual overrides may differ. A backend restart is needed after server configuration changes and interrupts temporary jobs. Durable library snapshots can be reopened afterward.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -13,6 +13,7 @@ Only the backend reads .env at the repository root. Pydantic Settings also reads
 | IMAGE_MODEL | empty | Explicit account-accessible image model; no automatic paid model choice |
 | IMAGE_SIZE | 1536x1024 | Existing optional provider request size; verify selected model support |
 | IMAGE_QUALITY | medium | Existing optional provider quality argument |
+| LIBRARY_ROOT | ~/.easypodcast/library | Private durable SQLite library and project/template media; initially empty or an existing marked library |
 | TEMP_ROOT | OS temporary directory/easypodcast | Exclusive initially empty managed root; not the repository or a shared media folder |
 | MAX_AUDIO_BYTES | 1073741824 | Maximum audio upload bytes (1 GiB) |
 | MAX_SRT_BYTES | 5242880 | Maximum SRT upload bytes (5 MiB) |

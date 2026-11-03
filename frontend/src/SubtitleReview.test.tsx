@@ -14,6 +14,7 @@ afterEach(() => {
 it("requires review and disables approval while the SRT has unsaved edits", async () => {
   const job = {
     id: "a",
+    metadata: { duration: 5, codec: "pcm_s16le", audio_tracks: 1 },
     state: "completed",
     subtitles_ready: true,
     word_timestamps: true,

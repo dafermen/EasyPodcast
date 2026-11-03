@@ -19,3 +19,5 @@ To add a UI message, add its Spanish key and English value, then call t() in ren
 ThemeSelector writes data-theme on the document root. Classic CSS remains the baseline. Studio rules are scoped under data-theme=studio; they style interface surfaces and controls while leaving the canvas and media untouched. Studio uses bundled Outfit, midnight blue, cyan primary actions, violet focus and green background approval. CSS breakpoints collapse the editing columns and wrap header controls on smaller screens.
 
 Test both languages and themes, reload persistence, unavailable storage, error messages and narrow layouts. Theme/language changes during an episode must not reset the job or dirty its design.
+
+Studio expansion strings include library recovery, template naming, direct manipulation, audio cue editing, layout blockers and format selection. English source phrases for these additions map through the catalog's reverse lookup to Spanish. User project/template names and subtitle text are never translated. Project dates follow the selected locale.

@@ -1,3 +1,4 @@
+import { SubtitleTimeline } from "./SubtitleTimeline";
 import { t } from "./i18n";
 import { useEffect, useState } from "react";
 import { api, artifactUrl, isActive } from "./api";
@@ -101,6 +102,7 @@ export function SubtitleReview({
         {" "}
         {t("Descargar SRT")}{" "}
       </a>
+      <SubtitleTimeline job={job} srt={srt} onChange={setSrt} disabled={busy} />
       <details>
         <summary>{t("Revisar o corregir SRT")}</summary>
         <p className="note">
@@ -120,25 +122,25 @@ export function SubtitleReview({
             spellCheck={false}
           />
         </label>
-        <button
-          disabled={busy || !dirty}
-          onClick={() =>
-            run(async () => {
-              const next = await api<Job>(
-                `/jobs/${job.id}/subtitles`,
-                token,
-                "PUT",
-                JSON.stringify({ srt }),
-              );
-              onChange(next);
-              setOriginal(srt);
-            })
-          }
-        >
-          {" "}
-          {t("Guardar correcciones del SRT")}{" "}
-        </button>
       </details>
+      <button
+        disabled={busy || !dirty}
+        onClick={() =>
+          run(async () => {
+            const next = await api<Job>(
+              `/jobs/${job.id}/subtitles`,
+              token,
+              "PUT",
+              JSON.stringify({ srt }),
+            );
+            onChange(next);
+            setOriginal(srt);
+          })
+        }
+      >
+        {" "}
+        {t("Guardar correcciones del SRT")}{" "}
+      </button>
       {error && (
         <div>
           <p role="alert">{t(error)}</p>

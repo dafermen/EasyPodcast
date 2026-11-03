@@ -1,5 +1,12 @@
 # Implementation status
 
+## Durable studio tools · 0.5.0 · 2026-11-03
+
+Implemented durable SQLite projects/history/covers, reopen/duplicate, versioned appearance drafts, brand templates with media, direct title/logo dragging and resizing with guides, audio-assisted subtitle cue editing, preflight and 16:9/9:16/1:1 output. SRT is downloadable from Export. Completed project snapshots survive restart; active operations are not restarted automatically. Current browser sessions can reconnect to a still-running job after a page reload.
+
+Browser review with synthetic speech and generated illustration/logo confirmed library reopen after a real backend restart, recovery of portrait format/title offset/logo placement, named template creation, audio seek/playback (4.435-second source), subtitle text/timing correction and approval, preflight, real vertical preview, and complete export. Windows verification: 110 backend tests, 27 frontend tests and 2 Node tests passed; Ruff, frontend formatting and TypeScript/Vite build passed. Local documentation links and all backend class/function docstrings were audited. The final service reports version 0.5.0. A completed portrait MP4 and its edited SRT were reopened successfully after another real restart; the interface resumed at Export. Screenshot: docs/screenshots/studio-050-export.png. Native macOS, large-library endurance and sudden power-loss corruption remain unverified.
+
+
 ## Bilingual UI and English documentation · 2026-11-03
 
 Implemented English/Spanish interface selection with persistent browser preference, English initial locale, Studio initial theme and preservation of explicit existing preferences. User-authored titles, descriptions, subtitles and the spoken audio language stay independent. Backend default episode title/atmosphere now start in English. Backend message strings remain legacy API text and are localized in browser display.
@@ -21,4 +28,4 @@ Verification in Windows: 97 backend tests, 22 frontend tests and 2 Node tests pa
 
 ## Operational limitations
 
-Jobs are in memory. Restarting loses them; browser reload loses its current token. A 404/410 does not imply a size limit and an old cached preview does not recover the audio. MIT covers original code; font licenses remain separate. No Internet exposure, lip synchronization, diarization, automatic transcript translation, publishing or durable episode history is implemented. Do not infer native macOS verification or long-form human audio accuracy from synthetic Windows/Linux tests.
+Live editing jobs are in memory and interrupted by restart. The durable local library now reconstructs saved projects, while a browser reload can reconnect through its library cookie. A 404/410 does not imply a size limit and an old cached preview does not recover the audio. MIT covers original code; font licenses remain separate. No Internet exposure, lip synchronization, diarization, automatic transcript translation, or publishing is implemented. Do not infer native macOS verification or long-form human audio accuracy from synthetic Windows/Linux tests.

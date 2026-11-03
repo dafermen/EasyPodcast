@@ -12,10 +12,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from . import library
 from .config import settings
 from .jobs import ACTIVE, make_job, store
 from .media import ROOT, capabilities, local_background, normalize_image, validate_audio
-from .models import Design, PreviewRequest, SubtitleEdit, TranscriptionOptions
+from .models import Design, DraftRequest, PreviewRequest, SubtitleEdit, TemplateRequest, TranscriptionOptions
 from .subtitles import parse_srt
 from .uploads import receive_files
 
@@ -30,7 +31,7 @@ async def lifespan(app):
     await asyncio.to_thread(store.close)
 
 
-app = FastAPI(title="EasyPodcast", version="0.4.1", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.5.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -79,7 +80,7 @@ async def invalid(request, exc):
 @app.get("/api/health")
 def health():
     """Expose service liveness and version without secrets."""
-    return {"status": "ok", "version": "0.4.1"}
+    return {"status": "ok", "version": "0.5.0"}
 
 
 @app.get("/api/capabilities")
@@ -182,6 +183,9 @@ async def create_uploaded_job(request, subtitle_mode, options):
             )
         if "image" in files:
             await asyncio.to_thread(normalize_image, path / "image.bin", path / "background.png")
+            await asyncio.to_thread(
+                normalize_image, path / "image.bin", path / "background-source.png", False, True
+            )
             (path / "image.bin").unlink()
         else:
             await asyncio.to_thread(local_background, path / "background.png")
@@ -207,6 +211,7 @@ async def create_uploaded_job(request, subtitle_mode, options):
                 except BaseException:
                     del store.jobs[jid]
                     raise
+        await asyncio.to_thread(store.checkpoint, job)
         response = JSONResponse({**job.public(), "token": job.token}, status_code=201)
         response.set_cookie(
             f"ep_{jid}",
@@ -246,6 +251,9 @@ def configure(design: Design, job=Depends(get_job)):
         editable(job)
         store.invalidate(job)
         job.design = design
+        store.checkpoint(job)
+        if job.project_id and not job.archive_error:
+            library.clear_draft(job.project_id)
         return job.public()
 
 
@@ -264,6 +272,7 @@ def approve_background(job=Depends(get_job)):
     with store.lock:
         editable(job)
         job.approved = True
+        store.checkpoint(job)
         return job.public()
 
 
@@ -275,6 +284,7 @@ def approve_preview(job=Depends(get_job)):
         if "preview" not in job.artifacts:
             raise HTTPException(409, "Primero genera y revisa una prueba.")
         job.preview_approved = True
+        store.checkpoint(job)
         return job.public()
 
 
@@ -288,6 +298,11 @@ def check_render(job):
         raise HTTPException(409, "Revisa y aprueba el fondo actual.")
     if max(c.end for c in job.cues) > job.meta["duration"] and not job.design.trim_subtitles:
         raise HTTPException(409, "Autoriza el recorte de subtítulos que exceden el audio.")
+    from .preflight import inspect
+
+    report = inspect(job)
+    if report["blockers"]:
+        raise HTTPException(409, report["blockers"][0])
     # Conservative product budget, not a measured size estimate.
     required = settings.min_free_bytes + int(job.meta["duration"] * 1_000_000)
     if shutil.disk_usage(job.path).free < required:
@@ -332,6 +347,10 @@ def cancel(job=Depends(get_job)):
 def delete(job=Depends(get_job)):
     """Request cancellation and deferred deletion of this managed episode."""
     with store.lock:
+        if job.state not in ACTIVE:
+            store.checkpoint(job)
+            if job.archive_error:
+                raise HTTPException(507, job.archive_error)
         job.deleting = True
         job.cancel.set()
         store.cleanup()
@@ -352,15 +371,21 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
             )
         mapping = {
             "logo": ("logo.png", "image/png"),
+            "audio": ("audio.bin", "application/octet-stream"),
             "subtitles": (
                 "generated.srt" if job.subtitle_source == "generate" else "original.srt",
                 "application/x-subrip",
             ),
-            "background": ("background.png", "image/png"),
+            "background": (
+                "background-source.png"
+                if (job.path / "background-source.png").exists()
+                else "background.png",
+                "image/png",
+            ),
             "preview": ("preview.mp4", "video/mp4"),
             "video": ("video.mp4", "video/mp4"),
         }
-        if kind not in mapping or kind not in job.artifacts:
+        if kind not in mapping or (kind not in job.artifacts and kind != "audio"):
             raise HTTPException(404, "Artefacto no disponible.")
         if job.state in ACTIVE:
             raise HTTPException(409, "Espera a que termine la operación activa.")
@@ -412,6 +437,7 @@ def subtitles(job=Depends(get_job)):
         return {
             "srt": path.read_text(encoding="utf-8-sig"),
             "word_timestamps": any(c.words for c in job.cues),
+            "cues": [{"start": c.start, "end": c.end, "text": c.text} for c in job.cues],
         }
 
 
@@ -434,6 +460,7 @@ def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
         job.subtitles_approved = False
         job.artifacts.add("subtitles")
         store.invalidate(job)
+        store.checkpoint(job)
         return job.public()
 
 
@@ -445,6 +472,7 @@ def approve_subtitles(job=Depends(get_job)):
         if not job.cues:
             raise HTTPException(409, "Aún no hay subtítulos para revisar.")
         job.subtitles_approved = True
+        store.checkpoint(job)
         return job.public()
 
 
@@ -458,6 +486,138 @@ def font_file(key: str, bold: bool = False):
     return FileResponse(
         font_path(key, bold), media_type="font/ttf", headers={"Cache-Control": "public, max-age=86400"}
     )
+
+
+@app.post("/api/library/session")
+def library_session():
+    """Establish a same-origin HttpOnly local-library capability without exposing it to JavaScript."""
+    response = JSONResponse({"ready": True})
+    response.set_cookie(
+        "ep_library", library.owner_key(), httponly=True, samesite="strict", path="/api", max_age=86400 * 365
+    )
+    return response
+
+
+@app.get("/api/projects")
+def project_list(request: Request):
+    """List durable local projects after local-library authorization."""
+    library.authorize(request)
+    result = library.projects()
+    with store.lock:
+        for row in result:
+            live = next(
+                (item for item in store.jobs.values() if item.project_id == row["id"] and not item.deleting),
+                None,
+            )
+            if live:
+                row["state"] = live.state
+    return result
+
+
+@app.get("/api/projects/{identifier}/thumbnail")
+def project_thumbnail(identifier: str, request: Request):
+    """Serve a bounded project cover image through the library session."""
+    library.authorize(request)
+    library.project(identifier)
+    return FileResponse(
+        library.directory("projects", identifier) / "thumbnail.png", headers={"Cache-Control": "no-store"}
+    )
+
+
+@app.post("/api/projects/{identifier}/open")
+@app.post("/api/projects/{identifier}/duplicate")
+def open_project(identifier: str, request: Request):
+    """Recover or duplicate a durable project into a fresh token-protected workspace."""
+    library.authorize(request)
+    library.project(identifier)
+    with store.lock:
+        duplicate = request.url.path.endswith("duplicate")
+        existing = next(
+            (item for item in store.jobs.values() if item.project_id == identifier and not item.deleting),
+            None,
+        )
+        if existing and not duplicate:
+            record = library.project(identifier)
+            if record["draft"] and existing.state not in ACTIVE:
+                editable(existing)
+                recovered = Design.model_validate_json(record["draft"])
+                if recovered != existing.design:
+                    store.invalidate(existing)
+                    existing.design = recovered
+                store.checkpoint(existing)
+                library.clear_draft(identifier)
+            if existing.state not in ACTIVE:
+                existing.expires = time.time() + settings.ttl_seconds
+            job = existing
+        else:
+            if len(store.jobs) >= settings.max_jobs:
+                candidates = [
+                    item for item in store.jobs.values() if item.state not in ACTIVE and not item.readers
+                ]
+                if not candidates:
+                    raise HTTPException(
+                        429, "All editing sessions are busy. Wait before opening another project."
+                    )
+                oldest = min(candidates, key=lambda item: item.expires)
+                store.checkpoint(oldest)
+                if oldest.archive_error:
+                    raise HTTPException(507, oldest.archive_error)
+                store.remove_path(oldest.path)
+                del store.jobs[oldest.id]
+            job = library.restore(identifier, store, duplicate=duplicate)
+    response = JSONResponse({**job.public(), "token": job.token})
+    response.set_cookie(
+        f"ep_{job.id}",
+        job.token,
+        httponly=True,
+        samesite="strict",
+        path=f"/api/jobs/{job.id}/artifacts",
+        max_age=settings.ttl_seconds,
+    )
+    return response
+
+
+@app.put("/api/projects/{identifier}/draft")
+def project_draft(identifier: str, body: DraftRequest, request: Request):
+    """Autosave validated appearance settings without granting render approval."""
+    library.authorize(request)
+    saved = library.save_draft(identifier, body.design, body.base)
+    return {"saved": saved}
+
+
+@app.get("/api/templates")
+def template_list(request: Request):
+    """List reusable brand settings and media stored locally."""
+    library.authorize(request)
+    return library.templates()
+
+
+@app.post("/api/jobs/{jid}/templates")
+def create_template(request: Request, body: TemplateRequest | None = None, job=Depends(get_job)):
+    """Save the current brand appearance plus background/logo, without audio or captions."""
+    library.authorize(request)
+    with store.lock:
+        editable(job)
+        return {"id": library.save_template(job, body.title if body else job.design.title)}
+
+
+@app.post("/api/jobs/{jid}/templates/{identifier}")
+def apply_brand(identifier: str, request: Request, job=Depends(get_job)):
+    """Apply a saved brand while retaining this episode's title and spoken content."""
+    library.authorize(request)
+    with store.lock:
+        editable(job)
+        library.apply_template(job, identifier, store)
+        return job.public()
+
+
+@app.get("/api/jobs/{jid}/preflight")
+def preflight(job=Depends(get_job)):
+    """Check layout/text with real font measurement without starting a render."""
+    from .preflight import inspect
+
+    with store.lock:
+        return inspect(job)
 
 
 frontend = ROOT / "frontend" / "dist"

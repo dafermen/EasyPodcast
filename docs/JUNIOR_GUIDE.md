@@ -42,7 +42,7 @@ ASS adds fonts, outline, alignment and position at 1920 × 1080. make_ass builds
 
 showwaves/showfreqs analyze an audio branch. Another branch feeds AAC so visualizer sensitivity does not change the sound. A partial output is published only after FFprobe validates codec/resolution/fps/duration. Watching a real preview is necessary because the CSS canvas is approximate.
 
-Downloads stream with Range support; creating a browser Blob for a long MP4 could duplicate memory use. Reader leases prevent deletion during an active response. A finally block releases the lease even after disconnect. Temporary jobs have deadlines; no database reconstructs them after restart.
+Downloads stream with Range support; creating a browser Blob for a long MP4 could duplicate memory use. Reader leases prevent deletion during an active response. A finally block releases the lease even after disconnect. Temporary jobs have deadlines. The separate SQLite library can now reconstruct a fresh workspace from saved media and metadata; it never serializes live threads or subprocesses.
 
 ## 7. Preferences, secrets and errors
 
@@ -63,3 +63,11 @@ Try these exercises in a branch:
 5. Inject a timeout provider in a test. Verify failed state and retained input files without calling a paid API.
 
 When stuck, identify the owner of the value, its units, who changes it and how it is cleaned up. Then follow its definition and callers in CODE_REFERENCE.md.
+
+## 9. Learn persistence from the project library
+
+Read library.py next to jobs.py. A live Job contains things that cannot be serialized safely (thread events, subprocess handles and a secret token). checkpoint explicitly extracts portable fields and copies only allowlisted changed files. SQLite commits metadata; a temporary file plus replace publishes each copied medium. This separation explains why durable data survives workspace cleanup without pretending the running encoder survives a restart.
+
+A recovery draft is distinct from the committed Design. Its base version prevents an old network request from overwriting a newer explicit save. DraftAutosave depends on serialized content versions, not each new object returned by polling; otherwise an identical status refresh would resubmit the draft repeatedly. Preflight similarly checks meaningful state changes rather than every polling tick.
+
+Follow frameSize/canvasDelta/logoBox in CanvasEditor.tsx to see coordinate transforms: a 50-pixel pointer move on a half-size canvas is 100 output pixels. Compare those results with the FFmpeg graph and ASS resolution. Read SubtitleTimeline.tsx for parsing cue intervals, seeking an HTML audio element and writing corrected SRT back to the existing validated API.

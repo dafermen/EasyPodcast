@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 · 2026-11-03 · Durable studio tools
+
+- Local SQLite project library with covers/history, reopen/duplicate and recovery after restart.
+- Debounced, base-versioned appearance drafts; project switching flush and best-effort page-close flush.
+- Named brand templates including background/source image/logo, retaining the current episode content.
+- Title/logo dragging, arrow-key movement, resize handles and alignment guides.
+- Audio-assisted subtitle cue timeline with editable text/start/end, explicit save and approval.
+- Real-font preflight for text overflow and logo collisions.
+- Landscape, portrait and square rendering with source-aspect background preservation.
+- SRT download from Export; closing a workspace leaves the durable project intact.
+- Cross-thread instance-lock release fixed for orderly restart.
+
 ## 2026-11-03 · Localization and developer documentation
 
 - English and Spanish interface with English initial language and persistent preference.

@@ -28,6 +28,18 @@ Enter the starting second: 0 tests the beginning; 60 tests from one minute. The 
 
 Render the complete episode with the approved settings. Progress follows processed audio time. Download the MP4, background and design JSON. Downloads stream to the browser. The video is 1920 × 1080, 30 fps, H.264/AAC. No lip movement or automatic publishing is provided.
 
-## Keeping your work
+## Projects, templates and recovery
 
-Keep original media and download results. Jobs are temporary: default completed retention is 24 hours, failures/cancellations 15 minutes and active operation limit 4 hours. Polling does not extend retention. Restart loses jobs; reload loses the current token. A cached preview can remain visible after the backend job has disappeared. Retained JSON can recover settings, not lost media. Delete episode and files requests managed cleanup, waiting for active operations/readers.
+Your validated uploads create a saved local project automatically. The Project library above the editor shows covers, names, dates, status and recovery drafts. Continue project reopens it after a reload or restart. Duplicate creates an independent copy. Close episode removes the temporary workspace; the saved project remains in the library. Projects are stored on this computer, not synchronized to another OS automatically.
+
+Design changes save a recovery draft after a short pause. Wait for Recovery draft saved before closing; a page-close flush is best effort. Save design still commits the actual render settings. A recovered changed draft invalidates earlier previews so you must review a new one. Save failures are shown: keep the session open and check disk/access rather than assuming recovery succeeded. Subtitle text/timing edits require Save SRT corrections.
+
+Save current design as template stores fonts, colors, positions, output format, background and logo. Apply template keeps this episode's title/description and subtitles, replaces branding and requires a new preview. Save pending design changes before applying a template.
+
+On the canvas, drag the title/logo or focus them and use arrow keys (Shift for larger steps). Corner handles resize title/logo; the sliders remain available. Alignment guides appear while dragging. Choose landscape 16:9, portrait 9:16 or square 1:1 and inspect each independently. Backgrounds fit without cropping; a landscape image may have padding in portrait output. A true vertical background keeps its source aspect.
+
+Review or edit subtitles opens audio playback plus cue blocks and editable start/end seconds and text. Listen jumps to a phrase. Save corrections, then approve subtitles again. The raw SRT editor remains available. Changing timing/text removes estimated word highlighting.
+
+Before Preview and Export, Pre-export checks reports text overflow, invalid title placement and likely logo collisions. Fix blockers; warnings still need visual review. It cannot identify faces or judge aesthetics. Download the SRT from Export alongside MP4/background/JSON.
+
+Keep originals and back up LIBRARY_ROOT. Persistence does not protect against a deleted library, disk failure, loss of an unacknowledged draft or an operation interrupted before its output was validated. Completed snapshots are recoverable; running encoders/transcription must be explicitly retried. No project deletion or automatic archive pruning is provided in this block; use backups/storage management deliberately.

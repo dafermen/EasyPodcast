@@ -45,4 +45,8 @@ def logo_position(design):
         y = "H-h-" + str(margin)
     else:
         y = "(H-h)/2"
+    if design.logo_x is not None:
+        x = f"min(W-w,max(0,W*{design.logo_x}))"
+    if design.logo_y is not None:
+        y = f"min(H-h,max(0,H*{design.logo_y}))"
     return x, y

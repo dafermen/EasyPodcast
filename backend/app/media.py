@@ -136,7 +136,7 @@ def validate_audio(path: Path):
         raise ValueError("No se pudo verificar el audio con FFprobe.") from exc
 
 
-def normalize_image(source: Path, target: Path, logo=False):
+def normalize_image(source: Path, target: Path, logo=False, preserve=False):
     """Decode and size-bound an uploaded image before producing a normalized PNG."""
     try:
         with Image.open(source) as im:
@@ -148,6 +148,8 @@ def normalize_image(source: Path, target: Path, logo=False):
             image = ImageOps.exif_transpose(im).convert("RGBA" if logo else "RGB")
             if logo:
                 image.thumbnail((300, 160))
+            elif preserve:
+                image.thumbnail((1920, 1920))
             else:
                 # Contain with margins avoids cropping faces or stretching the source.
                 image = ImageOps.pad(image, (1920, 1080), color="#101522")
@@ -198,7 +200,9 @@ def render(job, design, start, duration, output, update):
         for bold in (False, True):
             source = font_path(key, bold)
             shutil.copyfile(source, fonts / source.name)
-    size = f"1600x{round(1080 * design.wave_height) // 2 * 2}"
+    frame_width, frame_height = design.frame_size
+    wave_width = round(frame_width * 5 / 6) // 2 * 2
+    size = f"{wave_width}x{round(frame_height * design.wave_height) // 2 * 2}"
     color = "0x" + design.color[1:]
     visual = (
         f"showwaves=s={size}:mode=line:rate=30:colors={color}"
@@ -206,9 +210,11 @@ def render(job, design, start, duration, output, update):
         else f"showfreqs=s={size}:mode=bar:ascale=sqrt:fscale=log:colors={color}:rate=30"
     )
     graph = (
+        f"[0:v]scale={frame_width}:{frame_height}:force_original_aspect_ratio=decrease,"
+        f"pad={frame_width}:{frame_height}:(ow-iw)/2:(oh-ih)/2:color=0x101522,setsar=1[bg];"
         f"[1:{job.meta['audio_stream']}]asplit=2[aout][viz];"
         f"[viz]volume={design.sensitivity},{visual},format=rgba,colorkey=0x000000:0.03:0.0[wave];"
-        f"[0:v][wave]overlay=160:{round(1080 * design.wave_y)}:shortest=1[base];"
+        f"[bg][wave]overlay={round(frame_width / 12)}:{round(frame_height * design.wave_y)}:shortest=1[base];"
     )
     inputs = [
         settings.ffmpeg,
@@ -220,7 +226,7 @@ def render(job, design, start, duration, output, update):
         "-framerate",
         "30",
         "-i",
-        "background.png",
+        "background-source.png" if (job.path / "background-source.png").exists() else "background.png",
         "-ss",
         str(start),
         "-i",
@@ -229,7 +235,8 @@ def render(job, design, start, duration, output, update):
     if (job.path / "logo.png").exists():
         inputs += ["-i", "logo.png"]
         x, y = logo_position(design)
-        graph += f"[base][2:v]overlay={x}:{y}[branded];[branded]"
+        graph += f"[2:v]scale=iw*{design.logo_scale}:ih*{design.logo_scale}[logo];"
+        graph += f"[base][logo]overlay=x='{x}':y='{y}'[branded];[branded]"
     else:
         graph += "[base]"
     graph += "ass=subtitles.ass:fontsdir=fonts,format=yuv420p[v]"
@@ -322,8 +329,8 @@ def render(job, design, start, duration, output, update):
         v = videos[0]
         if (
             v["codec_name"] != "h264"
-            or v["width"] != 1920
-            or v["height"] != 1080
+            or v["width"] != frame_width
+            or v["height"] != frame_height
             or v["pix_fmt"] != "yuv420p"
             or v["avg_frame_rate"] != "30/1"
             or not audios

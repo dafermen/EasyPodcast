@@ -34,3 +34,7 @@ Choose a new output path; utilities avoid overwriting retained outputs. The benc
 ## Manual review checklist
 
 Try a fresh English/Studio browser, then Spanish and Classic; verify reload persistence without an active episode. During a synthetic episode, change UI preferences and confirm unsaved design survives. Review accessible labels, errors, status, dates and narrow-screen header wrapping. Create/import settings, save, explicitly approve background, render/review a short clip and export. Keep a screenshot of observed layout. Native macOS, screen-reader assessment, long human speech, Base inference quality, paid images and crash/disconnect stress remain separate pending checks.
+
+## Durable studio validation (0.5.0)
+
+The isolated library suite verifies cross-thread-safe restart/recovery, token-free snapshots, versioned draft conflicts, named media templates, independent duplication, session capacity/eviction, unknown-ID safety, retention of the only workspace copy after archive errors, reconnecting to an active render, and read-only preflight during downloads. Real synthetic renders cover landscape, portrait, square and free-position/scaled logos; a portrait input's original aspect is preserved through library/template/download paths. Browser review additionally exercised recovery after a real restart, pointer drag, audio playback/seek, SRT edits and full export. Performance for large durable libraries and power-loss corruption is not implied by these tests.

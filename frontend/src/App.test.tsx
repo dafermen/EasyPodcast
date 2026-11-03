@@ -177,9 +177,11 @@ describe("episode assistant", () => {
       vi.fn().mockRejectedValue(new Error("Backend no disponible")),
     );
     render(<App />);
-    expect((await screen.findByRole("alert")).textContent).toContain(
-      "Backend no disponible",
-    );
+    expect(
+      (await screen.findAllByRole("alert"))
+        .map((item) => item.textContent)
+        .join(" "),
+    ).toContain("Backend no disponible");
   });
   it("creates an audio-only job and waits for transcription", async () => {
     const fetch = vi.fn().mockImplementation(async (url: string) => ({

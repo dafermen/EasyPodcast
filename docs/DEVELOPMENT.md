@@ -10,7 +10,7 @@ Run scripts/start.ps1 (Windows) or scripts/start.sh (macOS) for the backend on 8
 npm.cmd --prefix frontend run dev
 ```
 
-Vite serves 127.0.0.1:5173 and proxies /api to 8000. A frontend-only production build needs no backend restart. Backend changes require restart, which removes temporary episodes. A browser refresh also loses the current in-memory token; download work first.
+Vite serves 127.0.0.1:5173 and proxies /api to 8000. A frontend-only production build needs no backend restart. Backend changes require restart, which interrupts temporary operations. Reopen a durable project from the library afterward. A browser refresh loses the current workspace token; acknowledged design drafts can be recovered, while unacknowledged edits/SRT drafts still need explicit care.
 
 ## Editing conventions
 
@@ -47,3 +47,5 @@ First check /api/health, then /api/capabilities or scripts/doctor.py. Missing FF
 7. Update docs/status and regenerate the code reference.
 
 For a provider, implement ImageProvider.generate_background and inject fakes in tests. Never automatically retry a potentially billable request. For macOS, create fresh dependencies and run the multimedia suite before claiming validation.
+
+The durable library module uses Python's standard sqlite3; no additional server dependency is required. Tests override LIBRARY_ROOT to an isolated temporary directory so synthetic checks never populate the real user library. Never share one durable library between concurrent backend instances. Run library restart/authorization/template tests and real-format renders when changing persistence or composition. Preserve explicit approval gates and do not serialize tokens or live process resources.

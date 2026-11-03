@@ -3,6 +3,7 @@
 import queue
 import secrets
 import shutil
+import sqlite3
 import threading
 import time
 import uuid
@@ -48,11 +49,15 @@ class Job:
     subtitle_source: str = "upload"
     subtitles_approved: bool = True
     transcription_options: TranscriptionOptions = field(default_factory=TranscriptionOptions)
+    project_id: str | None = None
+    archive_error: str | None = None
 
     def public(self):
         """Return the token-free job snapshot exposed by status polling."""
         return {
             "id": self.id,
+            "project_id": self.project_id,
+            "archive_error": self.archive_error,
             "state": self.state,
             "phase": self.phase,
             "progress": self.progress,
@@ -95,7 +100,7 @@ class Store:
         if not marker.exists() and any(self.root.iterdir()):
             raise RuntimeError("TEMP_ROOT debe ser una carpeta vacía exclusiva de EasyPodcast.")
         marker.touch()
-        self.file_lock = FileLock(str(self.root / ".instance.lock"))
+        self.file_lock = FileLock(str(self.root / ".instance.lock"), thread_local=False)
         self.file_lock.acquire(timeout=0)
         for path in self.root.iterdir():
             if len(path.name) == 32 and all(c in "0123456789abcdef" for c in path.name):
@@ -147,6 +152,19 @@ class Store:
             job.progress = None
             job.active_deadline = time.time() + settings.active_ttl_seconds
             self.queue.put_nowait((job.id, kind, start, job.design.model_copy(deep=True)))
+
+    def checkpoint(self, job):
+        """Keep a durable recovery copy; expose save failures instead of hiding them."""
+        from .library import checkpoint
+
+        try:
+            with self.lock:
+                checkpoint(job)
+            job.archive_error = None
+        except (OSError, ValueError, sqlite3.Error):
+            job.archive_error = (
+                "Project recovery copy could not be saved. Check disk space and library access."
+            )
 
     def invalidate(self, job):
         """Discard preview/video artifacts and clear approval after a design or input change."""
@@ -219,6 +237,7 @@ class Store:
                         )
                         job.artifacts.add(kind)
                     if kind == "background":
+                        (job.path / "background-source.png").unlink(missing_ok=True)
                         job.background_mode, job.approved = "openai", False
                     job.state, job.phase = (
                         "completed",
@@ -239,6 +258,7 @@ class Store:
                     job.expires = time.time() + settings.failure_ttl_seconds
             finally:
                 output.unlink(missing_ok=True)
+                self.checkpoint(job)
                 self.queue.task_done()
 
     def clean_loop(self):

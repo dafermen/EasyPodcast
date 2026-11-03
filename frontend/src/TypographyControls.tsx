@@ -44,20 +44,46 @@ export const logoChoices = [
 export function logoStyle(design: Design): React.CSSProperties {
   const left = design.logo_position.endsWith("left");
   const middle = design.logo_position.startsWith("middle");
+  const custom = design.logo_x != null && design.logo_y != null;
   return {
+    ...(custom
+      ? {
+          left: `${design.logo_x! * 100}%`,
+          top: `${design.logo_y! * 100}%`,
+          right: "auto",
+          bottom: "auto",
+        }
+      : {}),
     position: "absolute",
-    maxWidth: "15.625%",
-    maxHeight: "14.815%",
+    maxWidth: `${((300 * (design.logo_scale ?? 1)) / (design.output_format === "landscape" || !design.output_format ? 1920 : 1080)) * 100}%`,
+    maxHeight: `${((160 * (design.logo_scale ?? 1)) / (design.output_format === "portrait" ? 1920 : 1080)) * 100}%`,
     width: "auto",
     height: "auto",
     ...(left
-      ? { left: `${design.logo_margin / 19.2}%` }
-      : { right: `${design.logo_margin / 19.2}%` }),
+      ? {
+          left: `${design.logo_margin / ((design.output_format === "landscape" || !design.output_format ? 1920 : 1080) / 100)}%`,
+        }
+      : {
+          right: `${design.logo_margin / ((design.output_format === "landscape" || !design.output_format ? 1920 : 1080) / 100)}%`,
+        }),
     ...(middle
       ? { top: "50%", transform: "translateY(-50%)" }
       : design.logo_position.startsWith("bottom")
-        ? { bottom: `${design.logo_margin / 10.8}%` }
-        : { top: `${design.logo_margin / 10.8}%` }),
+        ? {
+            bottom: `${design.logo_margin / ((design.output_format === "portrait" ? 1920 : 1080) / 100)}%`,
+          }
+        : {
+            top: `${design.logo_margin / ((design.output_format === "portrait" ? 1920 : 1080) / 100)}%`,
+          }),
+    ...(custom
+      ? {
+          left: `${design.logo_x! * 100}%`,
+          top: `${design.logo_y! * 100}%`,
+          right: "auto",
+          bottom: "auto",
+          transform: "none",
+        }
+      : {}),
   };
 }
 
@@ -82,8 +108,16 @@ export function TypographyControls({
           {t("Desplazamiento horizontal del título (px)")}{" "}
           <input
             type="range"
-            min="-600"
-            max="600"
+            min={
+              design.output_format && design.output_format !== "landscape"
+                ? -380
+                : -600
+            }
+            max={
+              design.output_format && design.output_format !== "landscape"
+                ? 380
+                : 600
+            }
             step="10"
             value={design.title_offset_x ?? 0}
             disabled={disabled}
@@ -193,9 +227,11 @@ export function TypographyControls({
         <select
           disabled={disabled || !hasLogo}
           value={design.logo_position ?? "top-right"}
-          onChange={(e) =>
-            change("logo_position", e.target.value as Design["logo_position"])
-          }
+          onChange={(e) => {
+            change("logo_position", e.target.value as Design["logo_position"]);
+            change("logo_x", null);
+            change("logo_y", null);
+          }}
         >
           {logoChoices.map(([id, label]) => (
             <option key={id} value={id}>
@@ -216,11 +252,25 @@ export function TypographyControls({
           onChange={(e) => change("logo_margin", Number(e.target.value))}
         />
       </label>
+      <label>
+        {t("Logo scale")}
+        <input
+          type="range"
+          min="0.25"
+          max="2.5"
+          step="0.05"
+          value={design.logo_scale ?? 1}
+          disabled={disabled || !hasLogo}
+          onChange={(e) => change("logo_scale", Number(e.target.value))}
+        />
+      </label>
       <p className="note">
         {hasLogo
           ? t("Comprueba en la prueba que el logo no tape texto ni rostros.")
           : t("Carga un logo en Archivos para activar su posición.")}{" "}
-        {t("Los tamaños se expresan para el video de 1920 × 1080.")}{" "}
+        {t(
+          "Los tamaños se expresan en píxeles del formato de video seleccionado.",
+        )}{" "}
       </p>
     </fieldset>
   );
