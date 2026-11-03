@@ -75,6 +75,8 @@ def test_logo_and_fonts_in_real_render(client, audio, position, tmp_path):
         subtitle_font="mono",
         title_font_size=82,
         font_size=36,
+        title_offset_x=-200 if position == "top-left" else 200,
+        title_offset_y=80,
         logo_position=position,
         logo_margin=70,
         preset="ultrafast",
@@ -101,3 +103,21 @@ def test_logo_and_fonts_in_real_render(client, audio, position, tmp_path):
     with Image.open(image) as frame:
         pixel = frame.convert("RGB").getpixel((120, 120) if position == "top-left" else (1800, 960))
         assert pixel[0] > 180 and pixel[1] < 70 and pixel[2] > 180
+
+
+@pytest.mark.parametrize("x,y", [(-600, -80), (0, 0), (600, 150)])
+def test_title_position_is_rendered_and_roundtrips(x, y):
+    design = Design(title="Hello", title_offset_x=x, title_offset_y=y)
+    script = make_ass([], design, 1)
+    assert rf"{chr(92)}pos({960+x},{100+y})" in script
+    assert Design.model_validate(design.model_dump()).title_offset_x == x
+
+@pytest.mark.parametrize("values", [{"title_offset_x": 601}, {"title_offset_y": -81}, {"title_offset_y": 401}])
+def test_title_position_bounds(values):
+    with pytest.raises(ValidationError):
+        Design(**values)
+
+def test_title_position_respects_visualizer_space():
+    with pytest.raises(ValueError, match="posición"):
+        make_ass([], Design(title_offset_y=400, title_font_size=110), 1)
+    assert Design.model_validate({"title": "Old JSON"}).title_offset_y == 0

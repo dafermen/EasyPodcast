@@ -21,6 +21,8 @@ class Design(BaseModel):
     title_font: FontKey = "sans"
     title_bold: bool = True
     title_font_size: int = Field(64, ge=28, le=110)
+    title_offset_x: int = Field(0, ge=-600, le=600)
+    title_offset_y: int = Field(0, ge=-80, le=400)
     logo_position: Literal[
         "top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"
     ] = "top-right"

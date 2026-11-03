@@ -178,11 +178,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events = []
     if design.title:
-        lines = wrap_text(design.title, design.title_font, design.title_font_size, 1600, design.title_bold)
-        if len(lines) > 3 or 100 + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
-            raise ValueError("El título no cabe sobre el visualizador: reduce su tamaño o acorta el texto.")
+        x, y = 960 + design.title_offset_x, 100 + design.title_offset_y
+        width = min(1600, 2 * (min(x, 1920 - x) - 120))
+        lines = wrap_text(design.title, design.title_font, design.title_font_size, width, design.title_bold)
+        if len(lines) > 3 or y + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
+            raise ValueError("El título no cabe sobre el visualizador: reduce su tamaño, acorta el texto o ajusta su posición.")
         title = "\n".join(lines)
-        events.append(f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{escape_ass(title)}")
+        position = rf"{{\an8\pos({x},{y})}}"
+        events.append(f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{position}{escape_ass(title)}")
     for cue in cues:
         caption = wrap_caption(cue.text, design)
         boundaries = sorted(

@@ -826,6 +826,12 @@ export function App() {
                             fontFamilies[design?.title_font ?? "sans"],
                           fontSize: `${(design?.title_font_size ?? 64) / 19.2}cqw`,
                           fontWeight: (design?.title_bold ?? true) ? 700 : 400,
+                          top: `${(100 + (design?.title_offset_y ?? 0)) / 10.8}%`,
+                          left: `${(960 + (design?.title_offset_x ?? 0)) / 19.2}%`,
+                          right: "auto",
+                          transform: "translateX(-50%)",
+                          width: `${Math.min(1600, 2 * (840 - Math.abs(design?.title_offset_x ?? 0))) / 19.2}%`,
+                          lineHeight: 1.3,
                         }}
                       >
                         {design?.title}

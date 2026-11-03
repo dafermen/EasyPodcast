@@ -61,6 +61,39 @@ export function TypographyControls({
   return (
     <fieldset className="typography-controls">
       <legend>Tipografía y logo</legend>
+      <div className="pair">
+        <label>
+          Desplazamiento horizontal del título (px)
+          <input
+            type="range"
+            min="-600"
+            max="600"
+            step="10"
+            value={design.title_offset_x ?? 0}
+            disabled={disabled}
+            onChange={(e) => change("title_offset_x", Number(e.target.value))}
+          />
+          <span>{design.title_offset_x ?? 0} px · izquierda / derecha</span>
+        </label>
+        <label>
+          Desplazamiento vertical del título (px)
+          <input
+            type="range"
+            min="-80"
+            max="400"
+            step="10"
+            value={design.title_offset_y ?? 0}
+            disabled={disabled}
+            onChange={(e) => change("title_offset_y", Number(e.target.value))}
+          />
+          <span>{design.title_offset_y ?? 0} px · arriba / abajo</span>
+        </label>
+      </div>
+      <p className="note">
+        0 conserva la posición original. Mueve los controles, guarda el diseño y
+        revisa una nueva prueba. Un título largo puede necesitar menos
+        desplazamiento o una letra más pequeña.
+      </p>
       <label className="check">
         <input
           type="checkbox"

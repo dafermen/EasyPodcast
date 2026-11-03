@@ -14,6 +14,8 @@ export interface Design {
   title_font: Design["subtitle_font"];
   title_bold: boolean;
   title_font_size: number;
+  title_offset_x: number;
+  title_offset_y: number;
   logo_position:
     | "top-left"
     | "top-right"

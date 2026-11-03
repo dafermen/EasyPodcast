@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, it, expect, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TypographyControls, logoStyle } from "./TypographyControls";
 import type { Design } from "./types";
@@ -82,4 +82,24 @@ it("explains missing logo", () => {
     (screen.getByLabelText("Posición del logo") as HTMLSelectElement).disabled,
   ).toBe(true);
   expect(screen.getByText(/Carga un logo en Archivos/)).toBeTruthy();
+});
+
+it("moves the title independently in both directions", () => {
+  const change = vi.fn();
+  render(
+    <TypographyControls
+      design={{ title_offset_x: 0, title_offset_y: 0 } as Design}
+      disabled={false}
+      hasLogo={false}
+      change={change}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText(/Desplazamiento horizontal/), {
+    target: { value: "-200" },
+  });
+  fireEvent.change(screen.getByLabelText(/Desplazamiento vertical/), {
+    target: { value: "80" },
+  });
+  expect(change).toHaveBeenCalledWith("title_offset_x", -200);
+  expect(change).toHaveBeenCalledWith("title_offset_y", 80);
 });

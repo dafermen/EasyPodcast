@@ -1,3 +1,9 @@
+## Posición del título · 2026-11-03
+
+En Diseño → Tipografía y logo, los controles de desplazamiento horizontal y vertical mueven el título. Valores negativos: izquierda/arriba; positivos: derecha/abajo. 0 conserva la posición original. Los valores se expresan en píxeles del video 1920 × 1080 y se guardan en JSON (title_offset_x/title_offset_y); diseños anteriores usan 0.
+
+La composición muestra los cambios antes de guardar. Guarda, aprueba el fondo y genera otra prueba para verificar el resultado real. El ancho disponible se ajusta al desplazamiento; si el título no cabe, reduce tamaño, texto o desplazamiento. Límites: horizontal ±600 px, vertical −80 a 400 px, sujeto al espacio sobre el visualizador. El backend debe reiniciarse para activar estos campos; el reinicio pierde trabajos temporales.
+
 # Guía de uso
 
 1. Arranca EasyPodcast y abre el navegador. Revisa “Motor audiovisual listo”. Si faltan dependencias, ejecuta el doctor antes de exportar.
