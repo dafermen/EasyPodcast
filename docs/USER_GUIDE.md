@@ -1,47 +1,33 @@
-## Temas de interfaz (2026-11-03)
+# User guide
 
-El selector Tema de la interfaz, en la cabecera, ofrece Clásico (original y predeterminado) y Estudio (azul noche, cian y violeta, con Outfit). La selección se aplica inmediatamente y se recuerda en este navegador; funciona durante la sesión aunque el almacenamiento esté bloqueado. No forma parte del JSON del episodio ni modifica el MP4, los colores del visualizador o las fuentes elegidas para el video. Aprobar fondo y continuar mantiene el verde. Este cambio no requiere reiniciar el backend.
+## Preferences
 
-## Nuevas fuentes · 2026-11-03
+Use **Interface language** to choose English or Spanish. New browser profiles default to English. **Interface theme** offers Studio (default) and Classic. Preferences are stored in this browser and change immediately without clearing the episode. Explicit saved preferences take priority over defaults. Audio language is a separate transcription setting. Your title and subtitle content are never translated automatically.
 
-Se añaden Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue para títulos y subtítulos, con pesos Regular/Bold locales. Comic Neue es una alternativa libre de estilo parecido a Comic Sans, no la fuente de Microsoft. Comic Sans no se redistribuye ni se sirve como webfont. Selección en Diseño → Tipografía y logo; guarda y genera otra prueba. JSON conserva la familia elegida.
+## 1. Files
 
-## Posición del título · 2026-11-03
+Check Media engine ready. Upload MP3, WAV or M4A audio. Select an existing UTF-8 SRT or Generate from audio (local). The backend inspects the actual contents. Optionally upload PNG/JPEG background and a transparent PNG logo. Select Create episode.
 
-En Diseño → Tipografía y logo, los controles de desplazamiento horizontal y vertical mueven el título. Valores negativos: izquierda/arriba; positivos: derecha/abajo. 0 conserva la posición original. Los valores se expresan en píxeles del video 1920 × 1080 y se guardan en JSON (title_offset_x/title_offset_y); diseños anteriores usan 0.
+For generation, choose the language spoken in the audio and Tiny or Base. First use downloads a model from Hugging Face. Wait for transcription, download/review its SRT and approve subtitles before designing. Editing generated SRT removes word timestamps, so word highlighting becomes unavailable. Standard subtitles still work.
 
-La composición muestra los cambios antes de guardar. Guarda, aprueba el fondo y genera otra prueba para verificar el resultado real. El ancho disponible se ajusta al desplazamiento; si el título no cabe, reduce tamaño, texto o desplazamiento. Límites: horizontal ±600 px, vertical −80 a 400 px, sujeto al espacio sobre el visualizador. El backend debe reiniciarse para activar estos campos; el reinicio pierde trabajos temporales.
+## 2. Design
 
-# Guía de uso
+Choose Configure manually or Import a JSON design. Import accepts settings exported by EasyPodcast, not another program's transcript JSON. Audio, SRT, background and logo are separate files. Review imported settings before continuing.
 
-1. Arranca EasyPodcast y abre el navegador. Revisa “Motor audiovisual listo”. Si faltan dependencias, ejecuta el doctor antes de exportar.
-2. En Archivos selecciona audio y SRT. Opcionalmente añade fondo PNG/JPEG y logo PNG. Pulsa Crear episodio. Se verifica contenido real; la extensión no basta.
-3. Al comenzar Diseño elige Configurar manualmente o Importar un diseño JSON descargado de EasyPodcast. El JSON incluye ajustes; carga audio, subtítulos, fondo y logo aparte. Revisa o modifica el diseño y pulsa Guardar diseño. La confirmación indica el siguiente paso: pulsa el botón verde Aprobar fondo y continuar. El fondo local está identificado como sin IA; no tiene presentadores. Una imagen propia permite conservar exactamente los mismos personajes en otros episodios.
-4. Si configuraste OpenAI, “Generar imagen con IA” hace una llamada explícita con datos visuales. Revisa el resultado. Regenerar puede generar otro coste. Aprueba el fondo que quieres conservar.
-5. Ajusta la prueba desde un segundo específico. Su duración es hasta 20 segundos, limitada al audio restante. Los subtítulos se recortan y desplazan para ese segmento. Reproduce el MP4: tiene prioridad sobre la aproximación CSS.
-6. Aprueba la prueba y renderiza el episodio completo. El porcentaje procede del tiempo procesado por FFmpeg; durante IA no hay porcentaje. Puedes cancelar y reintentar.
-7. Descarga MP4, fondo y JSON. El fondo es estático; el visualizador responde al audio. No hay movimiento labial. Para reutilizar personajes, vuelve a cargar el PNG descargado, no esperes repetirlos con el mismo prompt.
+Set the title, visual description and atmosphere; these are content, not interface preferences. Typography and logo contains title/subtitle fonts and sizes, title bold, horizontal/vertical title offsets and six logo placements. Negative offsets move left/up; positive offsets move right/down. Zero restores the original title position.
 
-Un cambio de diseño elimina artefactos anteriores y exige una prueba nueva. El recorte de SRT posterior al final del audio requiere autorización explícita en Diseño. Los solapamientos y textos densos se avisan; no hay corrección de sincronización, traducción ni transcripción automática.
+Adjust visualizer, colors and subtitle layout. If subtitles extend beyond the audio, explicitly permit trimming. Warnings about dense text or overlap deserve preview review. Select Save design; the confirmation points to the green Approve background and continue button. Unsaved changes block continuation.
 
-Archivos temporales vencen según la hora mostrada. Polling no extiende TTL. Eliminar borra al terminar la cancelación y las descargas activas. Reiniciar backend o recargar pestaña pierde la sesión; conserva tus originales. No hay historial ni reanudación.
+The local background requires no provider. AI image generation is optional and explicit, may cost money, and receives only visual context. Review generated images before approval. To keep the same hosts in later episodes, reuse the downloaded PNG; the same prompt does not guarantee identical characters.
 
-Los subtítulos se ajustan por ancho con la fuente incluida; por defecto se admiten dos líneas y puedes elegir tres. Si un texto no cabe, se rechaza el render con instrucciones para corregirlo, sin truncarlo. Llaves se escapan y tras barras originales se añade un carácter invisible para impedir comandos ASS conservando los glifos visibles. Revisa siempre la prueba.
+## 3. Preview
 
-## Alternativa: subir solo audio
+Enter the starting second: 0 tests the beginning; 60 tests from one minute. The clip lasts up to 20 seconds or the remaining audio. Watch it and inspect sound, timing, line wrapping, title, logo and current-word highlighting. The MP4 is the final reference; the browser canvas is approximate. Adjust design if necessary, otherwise approve the preview.
 
-En Archivos selecciona Generar desde el audio (local), idioma y Tiny/Base. Sube audio sin SRT. Espera la transcripción, revisa/descarga el SRT y pulsa Aprobar subtítulos y diseñar. En Diseño, Resaltar la palabra actual usa amarillo por defecto y permite otro color. Con SRT propio o editado se usan subtítulos normales. Revisa la prueba porque los tiempos por palabra son estimados. Ver TRANSCRIPTION.md.
+## 4. Export
 
-## Tipografía y logo (0.3.0)
+Render the complete episode with the approved settings. Progress follows processed audio time. Download the MP4, background and design JSON. Downloads stream to the browser. The video is 1920 × 1080, 30 fps, H.264/AAC. No lip movement or automatic publishing is provided.
 
-Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.
+## Keeping your work
 
-## 0.4.0 · Fuentes amigables y negrilla (2026-11-03)
-
-Diseño → Tipografía y logo incorpora Negrilla en el título y fuentes Nunito, Fredoka, Rounded y Poppins. Regular/Bold locales; JSON conserva title_bold (true por defecto). 69 pruebas backend y 10 frontend pasaron; pruebas multimedia de las cuatro familias en ambos pesos. Ver docs/DESIGN_CONTROLS.md y THIRD_PARTY_NOTICES.md para detalles/licencias.
-
-## Conservación de episodios · 0.4.1 (2026-11-03)
-
-Se amplía TTL_SECONDS de 3600 a 86400: 24 h tras creación o última operación completada. Fallos/cancelaciones siguen a 15 min y operaciones activas a 4 h. /api/capabilities expone retention. El polling renueva solo la cookie de medios hasta el vencimiento real; no prolonga el trabajo. Se mantienen borrado manual, limpieza y espera por descargas activas.
-
-404/410 explican que el episodio pudo vencer, eliminarse, perderse en un reinicio o tener sesión inválida. La interfaz bloquea el render al detectar pérdida del trabajo, permite guardar el diseño aún en memoria como JSON y ofrece cargar otro episodio. Un clip visible puede estar en caché; no demuestra que el servidor conserve el audio. No hay persistencia entre reinicios: un trabajo ya eliminado no se restaura cambiando el límite.
+Keep original media and download results. Jobs are temporary: default completed retention is 24 hours, failures/cancellations 15 minutes and active operation limit 4 hours. Polling does not extend retention. Restart loses jobs; reload loses the current token. A cached preview can remain visible after the backend job has disappeared. Retained JSON can recover settings, not lost media. Delete episode and files requests managed cleanup, waiting for active operations/readers.

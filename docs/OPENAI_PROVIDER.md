@@ -1,9 +1,9 @@
-# Proveedor de imágenes
+# Optional image provider
 
-Implementación: `backend/app/images.py`, SDK oficial Python `OpenAI.images.generate`, cliente con timeout de 180 segundos y `max_retries=0`. La interfaz ImageProvider permite pruebas falsas sin red. Solo petición explícita del usuario llama al proveedor.
+The existing integration is backend/app/images.py. ImageProvider defines generate_background(design, destination); OpenAIProvider uses the Python SDK client.images.generate with model, prompt, n=1, size and quality, requiring data[0].b64_json. It uses a 180-second timeout and max_retries=0. Tests inject a fake provider and never incur charges.
 
-Contrato consultado el 2 de noviembre de 2026: [referencia oficial Python](https://developers.openai.com/api/reference/python/resources/images/methods/generate). La integración envía model, prompt, n=1, size y quality; necesita respuesta `data[0].b64_json`. Está orientada a modelos GPT Image, no a respuestas URL de proveedores antiguos. La referencia admite el tamaño horizontal 1536×1024 para GPT Image. Se adapta a 1920×1080 con márgenes, sin estirar ni recortar caras.
+Configure OPENAI_API_KEY and an accessible IMAGE_MODEL in the backend .env only. Defaults IMAGE_SIZE=1536x1024 and IMAGE_QUALITY=medium describe the existing integration; check your selected model's current API compatibility before paying for generation. No model is chosen automatically. No request is sent at startup.
 
-Configura OPENAI_API_KEY y un IMAGE_MODEL GPT Image disponible en tu cuenta en `.env`. Se deja modelo vacío para no suponer acceso o escoger automáticamente una opción con costes. IMAGE_SIZE=1536x1024 e IMAGE_QUALITY=medium son parámetros de contrato, **no una llamada real verificada**. Revisa compatibilidad del modelo elegido en la referencia. Reinicia backend.
+An explicit Generate AI image action sends visual title/context, description, style and atmosphere. Source audio, SRT and logo are not sent. Images are decoded, bounded by configured limits and normalized to the output canvas. The previous background is retained on failure. Approval remains explicit.
 
-No se ejecutaron generaciones pagadas. La prueba del proveedor falso no demuestra autenticación, cuota o calidad reales. La cancelación puede descartar el resultado local, pero no revierte una petición cobrada. Errores de red/cuota/autenticación se traducen sin revelar datos. Nunca reintentar automáticamente; la petición puede haber llegado al servicio.
+Network/authentication/quota errors are sanitized and not automatically retried. A timed-out or cancelled request may already have been billed; local cancellation cannot undo provider charges. Never expose keys in React, logs, screenshots or Git. The paid integration has not been verified with a real billed generation in this project; fake-provider tests do not establish account access or output quality.

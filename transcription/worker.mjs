@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Context overlaps by 5 seconds; accept words only from each unique 20-second core.
+/** Keep words from a unique window core, clamp to audio bounds and discard invalid timing. */
 export function selectWords(chunks, offset, coreStart, coreEnd, duration) {
   return (chunks ?? []).flatMap(chunk => {
     const [a,b] = chunk.timestamp ?? [];
@@ -14,11 +15,13 @@ export function selectWords(chunks, offset, coreStart, coreEnd, duration) {
   });
 }
 
+/** Detect nontrivial RMS energy before spending CPU on a mostly silent window. */
 export function audible(samples) {
   let sum=0; for (const value of samples) sum+=value*value;
   return samples.length && Math.sqrt(sum/samples.length)>=.001;
 }
 
+/** Read validated CLI options, run bounded local inference windows and emit JSON progress/results. */
 async function main() {
   const [input,output,profile,language,cache,download] = process.argv.slice(2);
   if (!['tiny','base'].includes(profile) || !['auto','en','es','pt','fr','de','it'].includes(language))

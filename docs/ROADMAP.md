@@ -1,17 +1,14 @@
-# Fases y tareas
+# Roadmap
 
-Cada tarea debe distinguir código existente de comportamiento verificado. La columna estado se mantiene en IMPLEMENTATION_STATUS.
+| Phase | Scope | Acceptance |
+| --- | --- | --- |
+| 0 Foundation | Repository, environment, docs, backend/frontend, dependency locks | Health, capabilities and real build |
+| 1 First video | Audio/SRT/image validation, ASS, CLI, FFmpeg | Decodable synthetic MP4 verified by FFprobe |
+| 2 Browser workflow | Streaming uploads, tokens, queue, polling, cancellation, downloads, TTL | Browser walkthrough |
+| 3 Design | Waveform/bars, title/fonts/position/logo, subtitle layout and preview offsets | Layout controls and real short render |
+| 4 Optional AI | Provider abstraction, explicit generation/approval and safe errors | Fake contract tests; paid verification only if requested/configured |
+| 5 Reliability | Managed cleanup, CI, testing, docs, benchmark | Evidence and explicit limits |
 
-| Fase | Actividades | Aceptación |
-|---|---|---|
-| 0 Preparación | repositorio, entorno, docs, diagnóstico, frontend/backend y locks | health/capabilities y build reales |
-| 1 Primer video | validación audio/SRT/imagen, ASS, CLI, FFmpeg y fixture sintético | MP4 decodificable y FFprobe válido |
-| 2 Flujo web | cargas streaming, tokens, cola, polling, cancelación, descarga, TTL | recorrido desde navegador |
-| 3 Diseño | onda/barras, título/logo, subtítulos, fragmentos con tiempos ajustados | respuesta visual y prueba corta revisada |
-| 4 IA opcional | SDK oficial, proveedor, errores, aprobación y reutilización | contrato falso probado; llamada real solo con configuración del usuario |
-| 5 Robustez | seguridad local, limpieza, CI, pruebas, docs y benchmark | evidencia, límites y pendientes explícitos |
+Implemented additions: local transcription and word highlighting; typography and title positioning; six additional font families; explicit manual/import design entry; grouped save/green-continue actions; 24-hour retention; Classic/Studio themes; English/Spanish interface and English developer documentation.
 
-Trabajo posterior verificable: probar macOS, realizar generación real controlada si el usuario la solicita/configura, medir 30–60 minutos con CPU/RAM/disco, ampliar pruebas de cierres abruptos y diversos decodificadores, extraer todos los textos UI, mejorar ajuste de subtítulos densos y dividir App en componentes al crecer. No añadir funcionalidades fuera de alcance para llenar el roadmap.
-## Claridad del diseño (2026-11-03)
-
-Implementado: elección inicial manual/importar, revisión de lo importado, confirmación accesible de guardado, acciones agrupadas y botón verde para continuar. No hay aprobación automática. Los cambios sin guardar y operaciones activas bloquean continuar. Verificación: 15 pruebas frontend y build correctos; no se ejecutó generación de IA de pago.
+Remaining validation: native macOS, long human recordings and Whisper Base quality, 60–120 minute workloads, interrupted operating-system shutdown, download disconnects under load, assistive-technology review and a configured paid image generation if explicitly requested. Persistence across restarts would be a new architecture feature, not a TTL change. Improve dense subtitle editing and continue breaking App into focused components as needed. Do not claim these tasks complete from synthetic tests alone.

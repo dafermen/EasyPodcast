@@ -109,13 +109,17 @@ def test_logo_and_fonts_in_real_render(client, audio, position, tmp_path):
 def test_title_position_is_rendered_and_roundtrips(x, y):
     design = Design(title="Hello", title_offset_x=x, title_offset_y=y)
     script = make_ass([], design, 1)
-    assert rf"{chr(92)}pos({960+x},{100+y})" in script
+    assert rf"{chr(92)}pos({960 + x},{100 + y})" in script
     assert Design.model_validate(design.model_dump()).title_offset_x == x
 
-@pytest.mark.parametrize("values", [{"title_offset_x": 601}, {"title_offset_y": -81}, {"title_offset_y": 401}])
+
+@pytest.mark.parametrize(
+    "values", [{"title_offset_x": 601}, {"title_offset_y": -81}, {"title_offset_y": 401}]
+)
 def test_title_position_bounds(values):
     with pytest.raises(ValidationError):
         Design(**values)
+
 
 def test_title_position_respects_visualizer_space():
     with pytest.raises(ValueError, match="posición"):

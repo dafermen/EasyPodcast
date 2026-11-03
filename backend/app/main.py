@@ -1,3 +1,5 @@
+"""FastAPI endpoints, local request guards and authenticated artifact responses."""
+
 import asyncio
 import hmac
 import shutil
@@ -20,6 +22,7 @@ from .uploads import receive_files
 
 @asynccontextmanager
 async def lifespan(app):
+    """Start the store and compute capabilities at startup; close resources during shutdown."""
     store.start()
     app.state.upload_slot = asyncio.Semaphore(1)
     app.state.capabilities = await asyncio.to_thread(capabilities)
@@ -32,10 +35,14 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost
 
 
 class RequestGuard:
+    """Enforce allowed browser origins and a total request-body byte budget."""
+
     def __init__(self, app):
+        """Initialize the instance resources; background threads are started separately."""
         self.app = app
 
     async def __call__(self, scope, receive, send):
+        """Handle an ASGI request while preserving middleware or response cleanup guarantees."""
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         headers = dict(scope["headers"])
@@ -49,6 +56,7 @@ class RequestGuard:
         limit = settings.max_audio_bytes + settings.max_srt_bytes + settings.max_image_bytes * 2 + 1024**2
 
         async def bounded_receive():
+            """Count streamed ASGI body bytes and enforce the total upload budget."""
             nonlocal total
             message = await receive()
             total += len(message.get("body", b""))
@@ -64,20 +72,24 @@ app.add_middleware(RequestGuard)
 
 @app.exception_handler(ValueError)
 async def invalid(request, exc):
+    """Convert a validation ValueError into a safe HTTP 422 response."""
     return JSONResponse({"detail": str(exc)}, status_code=422)
 
 
 @app.get("/api/health")
 def health():
+    """Expose service liveness and version without secrets."""
     return {"status": "ok", "version": "0.4.1"}
 
 
 @app.get("/api/capabilities")
 def get_capabilities(request: Request):
+    """Return dependency and limit checks computed at application startup."""
     return request.app.state.capabilities
 
 
 def get_job(jid: str, request: Request):
+    """Authenticate the job token and reject absent, expired or invalid sessions."""
     with store.lock:
         job = store.jobs.get(jid)
         token = request.headers.get("X-Job-Token", "")
@@ -97,6 +109,7 @@ def get_job(jid: str, request: Request):
 
 
 def editable(job):
+    """Reject edits while an operation or artifact download holds the job."""
     if job.state in ACTIVE or job.readers:
         raise HTTPException(409, "Espera a que termine la operación o descarga activa.")
 
@@ -128,6 +141,7 @@ async def create_job(
     language: Literal["auto", "en", "es", "pt", "fr", "de", "it"] = "en",
     model: Literal["tiny", "base"] = "tiny",
 ):
+    """Serialize uploads and dispatch creation for the selected subtitle source."""
     if request.app.state.upload_slot.locked():
         raise HTTPException(429, "Ya hay una carga en curso.")
     async with request.app.state.upload_slot:
@@ -137,6 +151,7 @@ async def create_job(
 
 
 async def create_uploaded_job(request, subtitle_mode, options):
+    """Receive and validate uploads, create an episode and optionally queue local transcription."""
     from .transcription import available
 
     if subtitle_mode == "generate" and not available():
@@ -209,6 +224,7 @@ async def create_uploaded_job(request, subtitle_mode, options):
 
 @app.get("/api/jobs/{jid}")
 def status(response: Response, job=Depends(get_job)):
+    """Return a job snapshot and refresh the media cookie only to its existing expiry."""
     with store.lock:
         # Keep media authentication aligned with the real deadline. Polling never extends job TTL.
         deadline = job.active_deadline + settings.ttl_seconds if job.state in ACTIVE else job.expires
@@ -225,6 +241,7 @@ def status(response: Response, job=Depends(get_job)):
 
 @app.patch("/api/jobs/{jid}/config")
 def configure(design: Design, job=Depends(get_job)):
+    """Replace validated Design settings and invalidate previous approvals/artifacts."""
     with store.lock:
         editable(job)
         store.invalidate(job)
@@ -234,6 +251,7 @@ def configure(design: Design, job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/background")
 def generate(job=Depends(get_job)):
+    """Queue explicit optional provider generation for the current job."""
     if not settings.openai_api_key or not settings.image_model:
         raise HTTPException(409, "Proveedor sin configurar; usa fondo local o propio.")
     store.enqueue(job, "background")
@@ -242,6 +260,7 @@ def generate(job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/background/approve")
 def approve_background(job=Depends(get_job)):
+    """Mark the current background reviewed without generating or rendering anything."""
     with store.lock:
         editable(job)
         job.approved = True
@@ -250,6 +269,7 @@ def approve_background(job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/preview/approve")
 def approve_preview(job=Depends(get_job)):
+    """Mark the current preview reviewed after checking that it exists."""
     with store.lock:
         editable(job)
         if "preview" not in job.artifacts:
@@ -259,6 +279,7 @@ def approve_preview(job=Depends(get_job)):
 
 
 def check_render(job):
+    """Enforce dependencies, subtitle/background approval, trim permission and disk budget."""
     if not job.cues or not job.subtitles_approved:
         raise HTTPException(409, "Genera y revisa los subtítulos antes de renderizar.")
     if not capabilities()["render_ready"]:
@@ -275,6 +296,7 @@ def check_render(job):
 
 @app.post("/api/jobs/{jid}/preview")
 def preview(body: PreviewRequest, job=Depends(get_job)):
+    """Queue up to 20 seconds from the validated starting offset."""
     with store.lock:
         editable(job)
         check_render(job)
@@ -286,6 +308,7 @@ def preview(body: PreviewRequest, job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/render")
 def export(job=Depends(get_job)):
+    """Queue full-episode export only after the current preview has been approved."""
     with store.lock:
         editable(job)
         check_render(job)
@@ -297,6 +320,7 @@ def export(job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/cancel")
 def cancel(job=Depends(get_job)):
+    """Signal cancellation and expose a cancelling phase without blocking the API."""
     with store.lock:
         if job.state in ACTIVE:
             job.cancel.set()
@@ -306,6 +330,7 @@ def cancel(job=Depends(get_job)):
 
 @app.delete("/api/jobs/{jid}")
 def delete(job=Depends(get_job)):
+    """Request cancellation and deferred deletion of this managed episode."""
     with store.lock:
         job.deleting = True
         job.cancel.set()
@@ -315,6 +340,7 @@ def delete(job=Depends(get_job)):
 
 @app.get("/api/jobs/{jid}/artifacts/{kind}")
 def artifact(kind: str, download: bool = False, job=Depends(get_job)):
+    """Serve an allowlisted artifact, holding a reader lease for media streaming."""
     with store.lock:
         if kind == "config":
             return JSONResponse(
@@ -342,12 +368,16 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
         job.readers += 1
 
     def release():
+        """Release one download reader and retry deferred cleanup."""
         with store.lock:
             job.readers -= 1
         store.cleanup()
 
     class LeasedFileResponse(FileResponse):
+        """Release a download reader lease even when response streaming fails or disconnects."""
+
         async def __call__(self, scope, receive, send):
+            """Handle an ASGI request while preserving middleware or response cleanup guarantees."""
             try:
                 await super().__call__(scope, receive, send)
             finally:
@@ -363,6 +393,7 @@ def artifact(kind: str, download: bool = False, job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/transcribe")
 def retry_transcription(job=Depends(get_job)):
+    """Queue transcription again only for episodes created in generate mode."""
     if job.subtitle_source != "generate":
         raise HTTPException(409, "Este trabajo usa un SRT propio; crea otro con generación automática.")
     store.enqueue(job, "transcript")
@@ -371,6 +402,7 @@ def retry_transcription(job=Depends(get_job)):
 
 @app.get("/api/jobs/{jid}/subtitles")
 def subtitles(job=Depends(get_job)):
+    """Read the reviewable SRT and expose whether word timestamps exist."""
     with store.lock:
         if job.state in ACTIVE:
             raise HTTPException(409, "Espera a que termine la operación activa.")
@@ -385,6 +417,7 @@ def subtitles(job=Depends(get_job)):
 
 @app.put("/api/jobs/{jid}/subtitles")
 def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
+    """Validate edited SRT, drop stale word timing and invalidate previous renders."""
     if len(body.srt.encode("utf-8")) > settings.max_srt_bytes:
         raise HTTPException(413, "El SRT supera el límite permitido.")
     cues, warnings = parse_srt(body.srt.encode())
@@ -406,6 +439,7 @@ def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
 
 @app.post("/api/jobs/{jid}/subtitles/approve")
 def approve_subtitles(job=Depends(get_job)):
+    """Approve generated or edited cues so the user can proceed to design."""
     with store.lock:
         editable(job)
         if not job.cues:
@@ -416,6 +450,7 @@ def approve_subtitles(job=Depends(get_job)):
 
 @app.get("/api/fonts/{key}")
 def font_file(key: str, bold: bool = False):
+    """Serve an allowlisted bundled font and reject arbitrary path requests."""
     from .fonts import FONTS, font_path
 
     if key not in FONTS:

@@ -1,3 +1,5 @@
+"""Native media inspection, image normalization and supervised FFmpeg rendering."""
+
 import json
 import math
 import os
@@ -18,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def run(args, timeout=30):
+    """Run a short command with checked exit status, captured UTF-8 output and a timeout."""
     return subprocess.run(
         args,
         capture_output=True,
@@ -31,6 +34,7 @@ def run(args, timeout=30):
 
 
 def capabilities():
+    """Inspect executables, filters, encoders, fonts, transcription installation and limits."""
     from .transcription import available
 
     result = {
@@ -90,6 +94,7 @@ def capabilities():
 
 
 def probe(path: Path):
+    """Read actual media streams and duration using FFprobe JSON output."""
     return json.loads(
         run(
             [
@@ -111,6 +116,7 @@ def probe(path: Path):
 
 
 def validate_audio(path: Path):
+    """Reject unsupported or excessive audio and return the selected stream metadata."""
     try:
         meta = probe(path)
         streams = [s for s in meta["streams"] if s["codec_type"] == "audio"]
@@ -131,6 +137,7 @@ def validate_audio(path: Path):
 
 
 def normalize_image(source: Path, target: Path, logo=False):
+    """Decode and size-bound an uploaded image before producing a normalized PNG."""
     try:
         with Image.open(source) as im:
             if im.format not in ({"PNG"} if logo else {"PNG", "JPEG"}):
@@ -150,6 +157,7 @@ def normalize_image(source: Path, target: Path, logo=False):
 
 
 def local_background(target: Path):
+    """Draw the deterministic local demonstration background without an external service."""
     image = Image.new("RGB", (1920, 1080), "#101522")
     draw = ImageDraw.Draw(image)
     for y in range(1080):
@@ -161,6 +169,7 @@ def local_background(target: Path):
 
 
 def terminate(process):
+    """Stop the subprocess tree/group and wait for it to exit on Windows or POSIX."""
     if process.poll() is not None:
         return
     if os.name == "nt":
@@ -177,6 +186,7 @@ def terminate(process):
 
 
 def render(job, design, start, duration, output, update):
+    """Build ASS/filtergraph inputs, supervise FFmpeg and validate the finished MP4 before publication."""
     import threading
 
     cues = clip_cues(job.cues, start, duration)
@@ -270,6 +280,7 @@ def render(job, design, start, duration, output, update):
     job.process = process
 
     def read_progress():
+        """Drain FFmpeg progress lines without blocking the rendering supervisor."""
         for line in process.stdout:
             if line.startswith("out_time_us="):
                 try:
@@ -278,6 +289,7 @@ def render(job, design, start, duration, output, update):
                     pass
 
     def read_errors():
+        """Drain bounded FFmpeg error output so a full stderr pipe cannot deadlock rendering."""
         for line in process.stderr:
             logs.append(line[-1000:])
 

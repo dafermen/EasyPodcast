@@ -1,50 +1,45 @@
-# API implementada
+# Local HTTP API
 
-Base `/api`. OpenAPI interactivo `/docs`, esquema `/openapi.json`. Mutaciones exigen cabecera `Origin: http://127.0.0.1:8000` (o uno de los orígenes configurados). Todas las operaciones sobre un trabajo requieren `X-Job-Token`; solo artefactos admiten la cookie HttpOnly por trabajo. No hay listado público de trabajos. Tokens nunca en URL.
+Base URL: http://127.0.0.1:8000/api. Interactive schema: /docs; JSON schema: /openapi.json. These generated schemas are authoritative for field types and bounds.
 
-| Método y ruta | Contrato |
-|---|---|
-| GET /health | status/version sin secretos |
-| GET /capabilities | FFmpeg/FFprobe/filtros/encoders/fuente, proveedor disponible y límites |
-| POST /jobs | multipart audio; srt obligatorio con subtitle_mode=upload (default), ausente con subtitle_mode=generate; image/logo opcionales; query language=en/auto/es/pt/fr/de/it, model=tiny/base; 201 con id, token y Job |
-| GET /jobs/{id} | estado, fase, progreso 0..1 o null, error seguro, metadata, warnings, config, aprobaciones, artefactos y expires_at UTC |
-| PATCH /jobs/{id}/config | Design completo, campos omitidos reciben defaults; no es merge parcial |
-| POST /jobs/{id}/background | encola generación explícita; conserva fondo anterior si falla |
-| POST /jobs/{id}/background/approve | aprueba imagen actual |
-| POST /jobs/{id}/preview | JSON `{"start":0}`; hasta 20 segundos o tiempo restante |
-| POST /jobs/{id}/preview/approve | registra revisión de prueba actual |
-| POST /jobs/{id}/render | exige fondo y prueba aprobados; encola exportación |
-| POST /jobs/{id}/cancel | solicita cancelación idempotente |
-| GET /jobs/{id}/artifacts/{kind} | background, preview, video, config; `download=true` fuerza descarga de medios; Range soportado |
-| DELETE /jobs/{id} | solicita cancelación y borrado diferido si hay lectores; deleted=true |
-| POST /jobs/{id}/transcribe | reintenta transcripción de un trabajo creado con modo generate |
-| GET /jobs/{id}/subtitles | SRT revisable y disponibilidad de tiempos por palabra; exige header token |
-| PUT /jobs/{id}/subtitles | JSON con srt; valida, invalida renders y elimina tiempos por palabra si cambia |
-| POST /jobs/{id}/subtitles/approve | habilita continuar tras revisión |
+Mutations require an allowed Origin, for example http://127.0.0.1:8000. Job API calls require X-Job-Token. Artifact navigation may also use a job-specific HttpOnly cookie. Do not put tokens in URLs. There is no public job-list endpoint.
 
-Estados: ready, queued, transcribing, generating_image, rendering_preview, rendering_video, cancelling, cancelled, completed, failed. Job incluye subtitle_source, subtitles_ready, subtitles_approved y word_timestamps. Artefacto adicional subtitles descarga SRT original/generado/editado identificado por contexto. Design incorpora highlight_words y highlight_color (amarillo #FFD54A). Eliminados/expirados desaparecen del registro; no hay estado persistente expired.
+| Method and path | Behavior |
+| --- | --- |
+| GET /health | Status and version, without secrets |
+| GET /capabilities | Dependencies, encoders, filters, fonts, provider availability, transcription and retention limits |
+| POST /jobs | Multipart audio; SRT required in upload mode; image/logo optional. Query subtitle_mode=upload/generate, language=en/auto/es/pt/fr/de/it, model=tiny/base. Returns 201, job and token |
+| GET /jobs/{id} | Snapshot: state, phase, progress, errors, warnings, metadata, config, approvals, artifacts, expires_at |
+| PATCH /jobs/{id}/config | Complete Design document; omitted fields take defaults, not a partial merge |
+| POST /jobs/{id}/background | Explicitly queue provider generation; preserve earlier background if it fails |
+| POST /jobs/{id}/background/approve | Approve current background |
+| POST /jobs/{id}/preview | Body {"start":0}; queue at most 20 seconds |
+| POST /jobs/{id}/preview/approve | Approve current rendered preview |
+| POST /jobs/{id}/render | Queue full export; requires approved background and preview |
+| POST /jobs/{id}/cancel | Request idempotent cancellation |
+| DELETE /jobs/{id} | Request cancellation and deferred managed deletion |
+| GET /jobs/{id}/artifacts/{kind} | background, logo, subtitles, preview, video or config. download=true requests download; media supports Range |
+| POST /jobs/{id}/transcribe | Retry a generate-mode transcription |
+| GET /jobs/{id}/subtitles | Read SRT and timing availability |
+| PUT /jobs/{id}/subtitles | Body {"srt":"..."}; validate and invalidate previous renders; changed text loses word timing |
+| POST /jobs/{id}/subtitles/approve | Enable design after review |
+| GET /fonts/{key}?bold=false | Public allowlisted local TTF; no arbitrary filesystem access |
 
-Errores: 400 Host inválido; 403 Origin; 404 inexistente/token incorrecto/artefacto ausente; 408 carga incompleta agotada; 409 operación activa, falta aprobación/dependencias; 410 vencido antes de limpieza; 413 tamaño; 422 validación; 429 carga simultánea/límite de trabajos; 507 espacio. Cola llena devuelve 422 con explicación. El esquema multipart se declara explícitamente en OpenAPI; el receptor trabaja con streaming sin UploadFile ni spooling completo.
+State enums remain English in both UI languages. The UI translates legacy backend phase/error messages for display; raw API consumers should treat messages as explanatory text, not stable machine codes. Interface locale and theme are not part of Design and are not sent as audio-language settings.
 
-Ejemplo Python desde cliente local (token guardado solo en RAM):
+Retention metadata: completed_seconds=86400, failed_seconds=900, active_seconds=14400 and survives_restart=false by default. GET status refreshes the media cookie only to the job's existing expiry, without extending the job TTL.
+
+Errors include 400 invalid Host, 403 Origin, 404 missing job/token/artifact, 408 incomplete-upload deadline, 409 busy/dependencies/approvals, 410 expired job before cleanup, 413 size, 422 validation/queue explanation, 429 upload/job capacity and 507 disk space. Unknown or invalid fields, non-finite numbers, unsupported enums and unsafe colors are rejected.
 
 ```python
 import httpx
-with httpx.Client(base_url="http://127.0.0.1:8000", headers={"Origin":"http://127.0.0.1:8000"}) as c:
-    with open("episode.wav","rb") as audio, open("episode.srt","rb") as srt:
-        job=c.post("/api/jobs",files={"audio":audio,"srt":srt}).raise_for_status().json()
-    headers={"X-Job-Token":job["token"]}
-    status=c.get(f'/api/jobs/{job["id"]}',headers=headers).json()
+with httpx.Client(base_url="http://127.0.0.1:8000", headers={"Origin": "http://127.0.0.1:8000"}) as client:
+    with open("episode.wav", "rb") as audio, open("episode.srt", "rb") as srt:
+        response = client.post("/api/jobs", files={"audio": audio, "srt": srt})
+        response.raise_for_status()
+        job = response.json()
+    headers = {"X-Job-Token": job["token"]}
+    snapshot = client.get(f'/api/jobs/{job["id"]}', headers=headers).json()
 ```
 
-Design y PreviewRequest exactos en OpenAPI y `app/models.py`; rechazan campos extra, NaN, colores arbitrarios y presets no permitidos. Config JSON no contiene claves, archivos, rutas ni tokens; importarlo no recupera medios ni garantiza repetir una imagen IA.
-
-## Tipografía y logo (0.3.0)
-
-Diseño → Tipografía y logo permite fuente y tamaño de título/subtítulos independientes, tres fuentes incluidas y seis posiciones de logo con margen. Guarda cambios y genera otra prueba antes de exportar. Design añade title_font, subtitle_font, title_font_size, logo_position y logo_margin. Fuentes por /api/fonts/{key}; logo autenticado por artifacts/logo. Detalles y verificaciones en docs/DESIGN_CONTROLS.md.
-
-## 0.4.0 · Fuentes amigables y negrilla (2026-11-03)
-
-Diseño → Tipografía y logo incorpora Negrilla en el título y fuentes Nunito, Fredoka, Rounded y Poppins. Regular/Bold locales; JSON conserva title_bold (true por defecto). 69 pruebas backend y 10 frontend pasaron; pruebas multimedia de las cuatro familias en ambos pesos. Ver docs/DESIGN_CONTROLS.md y THIRD_PARTY_NOTICES.md para detalles/licencias.
-
-Retención 0.4.1: /capabilities incluye retention.completed_seconds (86400 por defecto), failed_seconds, active_seconds y survives_restart=false. 404/410 de un trabajo indican sesión/episodio no disponible, con instrucciones de recarga. GET de estado renueva solo la cookie de medios hasta el vencimiento existente; no amplía el TTL del trabajo.
+Store the token only as long as needed. JSON export contains no secret key, media file, token or resumable session.

@@ -1,3 +1,5 @@
+"""Bundled font allowlist and logo coordinate helpers."""
+
 from pathlib import Path
 
 FONT_DIR = Path(__file__).resolve().parents[2] / "assets" / "fonts"
@@ -15,7 +17,6 @@ FONTS = {
     "lexend": ("Lexend", "Lexend-Regular.ttf"),
     "atkinsonhyperlegible": ("Atkinson Hyperlegible", "AtkinsonHyperlegible-Regular.ttf"),
     "comicneue": ("Comic Neue", "ComicNeue-Regular.ttf"),
-
 }
 BOLD_FILES = {
     "sans": "DejaVuSans-Bold.ttf",
@@ -30,10 +31,12 @@ BOLD_FILES = {
 
 
 def font_path(key, bold=False):
+    """Resolve an allowlisted font key and weight to a bundled font file."""
     return FONT_DIR / (BOLD_FILES[key] if bold else FONTS[key][1])
 
 
 def logo_position(design):
+    """Convert a validated logo placement into FFmpeg overlay coordinate expressions."""
     margin = design.logo_margin
     x = "W-w-" + str(margin) if design.logo_position.endswith("right") else str(margin)
     if design.logo_position.startswith("top"):

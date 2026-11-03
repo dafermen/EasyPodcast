@@ -1,3 +1,5 @@
+"""SRT/ASS timing, wrapping, escaping and estimated current-word highlighting."""
+
 import html
 import re
 from dataclasses import dataclass
@@ -8,6 +10,8 @@ from .fonts import FONTS, font_path
 
 
 class Word(BaseModel):
+    """Validate one recognized word with start/end times in seconds."""
+
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     start: float = Field(ge=0)
     end: float = Field(gt=0)
@@ -15,6 +19,7 @@ class Word(BaseModel):
 
     @model_validator(mode="after")
     def valid_interval(self):
+        """Require visible word text and an end time strictly after the start."""
         if self.end <= self.start or not self.text.strip():
             raise ValueError("Intervalo de palabra inválido.")
         return self
@@ -22,6 +27,8 @@ class Word(BaseModel):
 
 @dataclass(frozen=True)
 class Cue:
+    """Represent one subtitle interval and optional word timing needed for highlighting."""
+
     start: float
     end: float
     text: str
@@ -34,6 +41,7 @@ TIMING = re.compile(rf"^{TIME}\s+-->\s+{TIME}\s*$")
 
 
 def parse_srt(data: bytes) -> tuple[list[Cue], list[str]]:
+    """Decode UTF-8 SRT, validate ordered intervals and return cues plus review warnings."""
     try:
         content = data.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n").strip()
     except UnicodeDecodeError as exc:
@@ -68,6 +76,7 @@ def parse_srt(data: bytes) -> tuple[list[Cue], list[str]]:
 
 
 def clip_cues(cues: list[Cue], start: float, duration: float) -> list[Cue]:
+    """Intersect cues/words with the preview interval and shift timing to the new zero point."""
     return [
         Cue(
             max(c.start, start) - start,
@@ -88,11 +97,13 @@ def clip_cues(cues: list[Cue], start: float, duration: float) -> list[Cue]:
 def escape_ass(text: str) -> str:
     # libass supports \{ and \}. A zero-width word joiner after original backslashes
     # prevents \N/\n/\h interpretation while preserving the visible literal glyph.
+    """Escape literal user text so ASS override syntax cannot be injected."""
     text = "".join(c for c in text if c == "\n" or ord(c) >= 32)
     return text.replace("\\", "\\\u2060").replace("{", r"\{").replace("}", r"\}").replace("\n", r"\N")
 
 
 def wrap_text(text, font_key, size, width, bold=False):
+    """Measure the selected real font and split text into lines within the pixel width."""
     from PIL import ImageFont
 
     font = ImageFont.truetype(str(font_path(font_key, bold)), size)
@@ -113,6 +124,7 @@ def wrap_text(text, font_key, size, width, bold=False):
 
 
 def wrap_caption(text, design):
+    """Wrap subtitle text and reject layouts exceeding the selected line limit."""
     output = wrap_text(text, design.subtitle_font, design.font_size, 1920 * design.subtitle_width - 40)
     if len(output) > design.max_lines:
         raise ValueError(
@@ -122,12 +134,16 @@ def wrap_caption(text, design):
 
 
 def ass_time(seconds: float) -> str:
+    """Format seconds as nonnegative ASS centisecond timestamps."""
     cs = max(0, round(seconds * 100))
     return f"{cs // 360000}:{cs // 6000 % 60:02}:{cs // 100 % 60:02}.{cs % 100:02}"
 
 
 def render_srt(cues):
+    """Serialize cues using numbered UTF-8 SRT blocks and millisecond timestamps."""
+
     def stamp(seconds):
+        """Format seconds as a subtitle timestamp for a generated fixture or SRT."""
         ms = round(seconds * 1000)
         return f"{ms // 3600000:02}:{ms // 60000 % 60:02}:{ms // 1000 % 60:02},{ms % 1000:03}"
 
@@ -138,12 +154,14 @@ def render_srt(cues):
 
 
 def ass_color(value):
+    """Convert a validated RGB hex color into ASS BGR notation."""
     value = value.lstrip("#")
     return "&H" + value[4:6] + value[2:4] + value[0:2] + "&"
 
 
 def highlighted_caption(caption, words, active, design, offset=0):
     # Map by visible characters so line breaks do not shift the active word.
+    """Color only the active word while preserving escaped text and clipped offsets."""
     low = offset + sum(len("".join(w.text.split())) for w in words[:active])
     high = low + len("".join(words[active].text.split()))
     result = []
@@ -161,6 +179,7 @@ def highlighted_caption(caption, words, active, design, offset=0):
 
 
 def make_ass(cues, design, duration: float) -> str:
+    """Build the complete subtitle/title ASS document at 1920 by 1080 resolution."""
     color = design.subtitle_color.lstrip("#")
     color = "&H00" + color[4:6] + color[2:4] + color[0:2]
     margin = round(1920 * (1 - design.subtitle_width) / 2)
@@ -182,10 +201,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         width = min(1600, 2 * (min(x, 1920 - x) - 120))
         lines = wrap_text(design.title, design.title_font, design.title_font_size, width, design.title_bold)
         if len(lines) > 3 or y + len(lines) * design.title_font_size * 1.3 > 1080 * design.wave_y - 20:
-            raise ValueError("El título no cabe sobre el visualizador: reduce su tamaño, acorta el texto o ajusta su posición.")
+            raise ValueError(
+                "El título no cabe sobre el visualizador: reduce su tamaño, acorta el texto o ajusta su posición."
+            )
         title = "\n".join(lines)
         position = rf"{{\an8\pos({x},{y})}}"
-        events.append(f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{position}{escape_ass(title)}")
+        events.append(
+            f"Dialogue: 1,0:00:00.00,{ass_time(duration)},Title,,0,0,0,,{position}{escape_ass(title)}"
+        )
     for cue in cues:
         caption = wrap_caption(cue.text, design)
         boundaries = sorted(

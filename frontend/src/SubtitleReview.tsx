@@ -1,7 +1,9 @@
+import { t } from "./i18n";
 import { useEffect, useState } from "react";
 import { api, artifactUrl, isActive } from "./api";
 import type { Job } from "./types";
 
+/** Load, edit and explicitly approve SRT while preserving honest word-timing availability. */
 export function SubtitleReview({
   job,
   token,
@@ -35,6 +37,7 @@ export function SubtitleReview({
       current = false;
     };
   }, [job.id, job.subtitles_ready, active, token, reload]);
+  /** Wrap subtitle operations with busy/error feedback. */
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -42,7 +45,7 @@ export function SubtitleReview({
       await action();
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Error al actualizar subtítulos.",
+        e instanceof Error ? e.message : t("Error al actualizar subtítulos."),
       );
     } finally {
       setBusy(false);
@@ -52,17 +55,22 @@ export function SubtitleReview({
   if (active)
     return (
       <div className="fields">
-        <h3>Generando subtítulos</h3>
+        <h3>{t("Generando subtítulos")}</h3>
         <p>
-          La transcripción se ejecuta en tu equipo. La primera vez se descarga
-          el modelo. El progreso aparece en el panel del episodio.
+          {" "}
+          {t(
+            "La transcripción se ejecuta en tu equipo. La primera vez se descarga el modelo. El progreso aparece en el panel del episodio.",
+          )}{" "}
         </p>
       </div>
     );
   if (!job.subtitles_ready)
     return (
       <div className="fields">
-        <p>{job.error || "Todavía no hay subtítulos disponibles."}</p>
+        <p>
+          {(job.error ? t(job.error) : "") ||
+            t("Todavía no hay subtítulos disponibles.")}
+        </p>
         <button
           disabled={busy}
           onClick={() =>
@@ -73,30 +81,37 @@ export function SubtitleReview({
             )
           }
         >
-          Reintentar transcripción
+          {" "}
+          {t("Reintentar transcripción")}{" "}
         </button>
-        {error && <p role="alert">{error}</p>}
+        {error && <p role="alert">{t(error)}</p>}
       </div>
     );
   return (
     <div className="fields">
-      <h3>Revisa los subtítulos</h3>
+      <h3>{t("Revisa los subtítulos")}</h3>
       <p>
         {job.word_timestamps
-          ? "Incluyen tiempos estimados por palabra: el resaltado amarillo estará disponible en Diseño."
-          : "SRT sin tiempos por palabra: se mostrarán subtítulos normales."}
+          ? t(
+              "Incluyen tiempos estimados por palabra: el resaltado amarillo estará disponible en Diseño.",
+            )
+          : t("SRT sin tiempos por palabra: se mostrarán subtítulos normales.")}
       </p>
       <a className="button" href={artifactUrl(job, "subtitles", true)}>
-        Descargar SRT
+        {" "}
+        {t("Descargar SRT")}{" "}
       </a>
       <details>
-        <summary>Revisar o corregir SRT</summary>
+        <summary>{t("Revisar o corregir SRT")}</summary>
         <p className="note">
-          Guardar cambios elimina los tiempos por palabra y desactiva el
-          resaltado. Puedes descargar el original antes de editar.
+          {" "}
+          {t(
+            "Guardar cambios elimina los tiempos por palabra y desactiva el resaltado. Puedes descargar el original antes de editar.",
+          )}{" "}
         </p>
         <label>
-          Subtítulos sincronizados
+          {" "}
+          {t("Subtítulos sincronizados")}{" "}
           <textarea
             rows={14}
             value={srt}
@@ -120,14 +135,16 @@ export function SubtitleReview({
             })
           }
         >
-          Guardar correcciones del SRT
+          {" "}
+          {t("Guardar correcciones del SRT")}{" "}
         </button>
       </details>
       {error && (
         <div>
-          <p role="alert">{error}</p>
+          <p role="alert">{t(error)}</p>
           <button disabled={busy} onClick={() => setReload((n) => n + 1)}>
-            Volver a cargar el SRT
+            {" "}
+            {t("Volver a cargar el SRT")}{" "}
           </button>
         </div>
       )}
@@ -147,7 +164,8 @@ export function SubtitleReview({
           })
         }
       >
-        Aprobar subtítulos y diseñar →
+        {" "}
+        {t("Aprobar subtítulos y diseñar →")}{" "}
       </button>
     </div>
   );

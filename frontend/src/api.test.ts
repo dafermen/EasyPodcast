@@ -1,3 +1,6 @@
+import { beforeEach } from "vitest";
+import { setLocale } from "./i18n";
+beforeEach(() => setLocale("es"));
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { api, isActive, artifactUrl } from "./api";
 import type { Job } from "./types";

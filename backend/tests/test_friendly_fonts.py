@@ -10,7 +10,21 @@ from PIL import Image, ImageChops, ImageStat
 from test_api import wait
 
 
-@pytest.mark.parametrize("family", ["nunito", "fredoka", "quicksand", "poppins", "baloo2", "outfit", "balsamiqsans", "lexend", "atkinsonhyperlegible", "comicneue"])
+@pytest.mark.parametrize(
+    "family",
+    [
+        "nunito",
+        "fredoka",
+        "quicksand",
+        "poppins",
+        "baloo2",
+        "outfit",
+        "balsamiqsans",
+        "lexend",
+        "atkinsonhyperlegible",
+        "comicneue",
+    ],
+)
 @pytest.mark.parametrize("bold", [False, True])
 def test_fonts_and_bold_styles(family, bold, client):
     design = Design(title_font=family, subtitle_font=family, title_bold=bold)
@@ -26,7 +40,21 @@ def test_old_design_keeps_bold_title():
     assert Design.model_validate({"title": "Old design"}).title_bold is True
 
 
-@pytest.mark.parametrize("family", ["nunito", "fredoka", "quicksand", "poppins", "baloo2", "outfit", "balsamiqsans", "lexend", "atkinsonhyperlegible", "comicneue"])
+@pytest.mark.parametrize(
+    "family",
+    [
+        "nunito",
+        "fredoka",
+        "quicksand",
+        "poppins",
+        "baloo2",
+        "outfit",
+        "balsamiqsans",
+        "lexend",
+        "atkinsonhyperlegible",
+        "comicneue",
+    ],
+)
 def test_real_fonts_render_both_weights(client, audio, family, tmp_path):
     from app.config import settings
 
@@ -64,4 +92,3 @@ def test_real_fonts_render_both_weights(client, audio, family, tmp_path):
         with Image.open(image) as frame:
             pictures.append(frame.convert("RGB").crop((200, 90, 1720, 260)))
     assert sum(ImageStat.Stat(ImageChops.difference(*pictures)).mean) > 0.3
-

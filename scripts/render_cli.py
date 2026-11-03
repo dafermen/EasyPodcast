@@ -25,10 +25,10 @@ parser.add_argument("--seconds", type=float, default=20)
 parser.add_argument("--style", choices=["waveform", "spectrum"], default="waveform")
 args = parser.parse_args()
 if args.output.exists():
-    parser.error("La salida ya existe; elige otro nombre.")
+    parser.error("Output already exists; choose another name.")
 meta = validate_audio(args.audio)
 if not 0 <= args.start < meta["duration"] or args.seconds <= 0:
-    parser.error("Inicio/duración inválidos.")
+    parser.error("Invalid start/duration.")
 cues, _ = parse_srt(args.srt.read_bytes())
 args.output.parent.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="easypodcast-cli-") as folder:
@@ -55,4 +55,4 @@ with tempfile.TemporaryDirectory(prefix="easypodcast-cli-") as folder:
         lambda p: None,
     )
     shutil.copyfile(path / "result.mp4", args.output)
-print("MP4 validado:", args.output)
+print("Validated MP4:", args.output)

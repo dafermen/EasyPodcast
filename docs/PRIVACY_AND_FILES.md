@@ -1,17 +1,11 @@
-# Privacidad y archivos
+# Privacy, files and session lifetime
 
-Audio, SRT, imágenes, logo y renders se guardan temporalmente en el equipo donde corre backend. No todo se procesa en el navegador: FFmpeg lee/escribe disco. TEMP_ROOT por defecto es `easypodcast` bajo el temporal del sistema, fuera del repositorio. Cada trabajo tiene UUID y nombres internos; no se usan rutas del cliente.
+EasyPodcast is intended for a single local user on loopback. Audio, SRT, rendered video and local transcription remain on the machine. Hugging Face supplies model files on first use; optional image generation sends only visual context after an explicit action. Provider keys remain backend-only.
 
-Solo una descripción visual construida desde título, descripción, estilo y ambiente llega a OpenAI al pulsar generación. Audio y SRT no se envían. La retención del proveedor depende de sus políticas y cuenta; esta aplicación no garantiza retención cero ni cancelación de costes tras enviar una petición.
+A job has a random ID and secret token. API calls authenticate with X-Job-Token. Browser media navigation uses a job-specific HttpOnly/SameSite cookie scoped to artifacts. Cookies expire with the existing job deadline; polling does not extend the deadline. Browser language/theme storage contains no media or tokens.
 
-No hay base de datos, localStorage, historial ni preferencias persistentes. Token de API permanece en memoria React; cookie HttpOnly/SameSite Strict permite solo medios del trabajo. Al recargar la página no se recupera el token. JSON exportado contiene únicamente Design.
+The managed temporary root is exclusive, marker-protected and file-locked. Each job has a UUID child folder with internal filenames. Original upload names are not used as filesystem paths. Startup and scheduled cleanup remove only managed children; symlinks are not followed. Deletion is deferred while a worker or download reader uses files. Models use a separate persistent cache and are not removed with episode cleanup.
 
-TTL: 24 horas después de operaciones completadas; 15 tras fallo/cancelación; máximo activo cuatro horas. Limpieza cada dos segundos. Descargas activas impiden borrado y mutaciones. Cancelar conserva entradas para reintento; Eliminar marca borrado y cancela; apagado ordenado limpia. En arranque se eliminan UUID residuales solo dentro de raíz marcada y bloqueada. No se siguen symlinks.
+Default retention is 24 hours after creation or a completed operation, 15 minutes after failure/cancellation, and 4 hours maximum active operation time. These are configurable. There is no database, history or restart recovery: restarting destroys jobs; reloading the page loses the token held in React memory. Cached previews do not prove the server still retains the original audio.
 
-Un crash o apagado abrupto puede dejar medios hasta el siguiente arranque. El borrado normal no es borrado forense ni garantiza eliminación de copias del OS/backups. El usuario controla los archivos descargados fuera del temporal. CLI conserva explícitamente su salida elegida. No ejecutar backend en red pública.
-
-No se registran claves, audio, SRT, prompts completos o imágenes. Scripts de inicio desactivan access logs. Errores al cliente no incluyen stderr ni rutas internas. Los temporales requieren permisos apropiados de la cuenta del OS; no hay aislamiento frente a otros procesos de la misma cuenta.
-
-## Transcripción local
-
-Whisper se ejecuta en un subproceso Node dentro del equipo. No se envían audios a Hugging Face: solo se descargan modelos si se permite. Su caché persiste fuera de Git y del TTL de medios. PCM, JSON de palabras y SRT son temporales del trabajo; PCM/JSON intermedios se eliminan tras cada intento. La descarga SRT elegida por el usuario se conserva donde la guarde.
+Keep originals, download outputs and export design JSON. JSON recovers settings only. Never commit user media, model caches, .env, tokens or render outputs. MIT covers original code; third-party media/fonts keep their own rights. Do not expose this local service on a LAN or the Internet without a separate authentication/TLS design.

@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+/** Offer manual setup or JSON import without automatically approving the background. */
 export function DesignEntry({
   method,
   setMethod,
@@ -13,7 +15,7 @@ export function DesignEntry({
 }) {
   return (
     <fieldset className="design-entry">
-      <legend>¿Cómo quieres preparar el diseño?</legend>
+      <legend>{t("¿Cómo quieres preparar el diseño?")}</legend>
       <label className="check">
         <input
           type="radio"
@@ -22,8 +24,8 @@ export function DesignEntry({
           checked={method === "manual"}
           disabled={disabled}
           onChange={() => setMethod("manual")}
-        />
-        Configurar manualmente
+        />{" "}
+        {t("Configurar manualmente")}{" "}
       </label>
       <label className="check">
         <input
@@ -33,13 +35,14 @@ export function DesignEntry({
           checked={method === "import"}
           disabled={disabled}
           onChange={() => setMethod("import")}
-        />
-        Importar un diseño JSON
+        />{" "}
+        {t("Importar un diseño JSON")}{" "}
       </label>
       {method === "import" && (
         <>
           <label>
-            Importar diseño JSON
+            {" "}
+            {t("Importar diseño JSON")}{" "}
             <input
               type="file"
               accept="application/json,.json"
@@ -52,20 +55,25 @@ export function DesignEntry({
             />
           </label>
           <p className="note">
-            Carga el JSON descargado antes desde EasyPodcast. Incluye ajustes,
-            no audio, subtítulos, fondo ni logo. Después podrás revisar y
-            modificar lo importado.
+            {" "}
+            {t(
+              "Carga el JSON descargado antes desde EasyPodcast. Incluye ajustes, no audio, subtítulos, fondo ni logo. Después podrás revisar y modificar lo importado.",
+            )}{" "}
           </p>
           {imported && (
             <p role="status">
-              ✓ Diseño importado. Revisa sus ajustes y el fondo antes de
-              continuar.
+              {" "}
+              {t(
+                "✓ Diseño importado. Revisa sus ajustes y el fondo antes de continuar.",
+              )}{" "}
             </p>
           )}
           {!imported && (
             <p className="note">
-              Elige un JSON para continuar o vuelve a configurar manualmente sin
-              perder tus ajustes actuales.
+              {" "}
+              {t(
+                "Elige un JSON para continuar o vuelve a configurar manualmente sin perder tus ajustes actuales.",
+              )}{" "}
             </p>
           )}
         </>

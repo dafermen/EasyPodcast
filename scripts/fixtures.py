@@ -13,7 +13,7 @@ parser.add_argument("--output", type=Path, required=True)
 parser.add_argument("--seconds", type=int, default=26)
 args = parser.parse_args()
 if not 2 <= args.seconds <= 7200:
-    parser.error("--seconds debe estar entre 2 y 7200")
+    parser.error("--seconds must be between 2 and 7200")
 args.output.mkdir(parents=True, exist_ok=True)
 subprocess.run(
     [
@@ -32,6 +32,7 @@ subprocess.run(
 
 
 def stamp(t):
+    """Format whole seconds as an SRT millisecond timestamp for synthetic fixtures."""
     return f"{t // 3600:02}:{t // 60 % 60:02}:{t % 60:02},000"
 
 
@@ -41,4 +42,4 @@ for i, t in enumerate(range(0, args.seconds, 4), 1):
         f"{i}\n{stamp(t)} --> {stamp(min(t + 3, args.seconds))}\n¿Listos? Canción, acentos y {{llaves}}. Barra \\N literal."
     )
 (args.output / "demo.srt").write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
-print("Archivos sintéticos creados en", args.output)
+print("Synthetic files created in", args.output)

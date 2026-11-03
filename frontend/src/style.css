@@ -942,3 +942,24 @@ footer {
     padding: 24px 4%;
   }
 }
+
+.language-selector {
+  font-size: 11px;
+  min-width: 125px;
+}
+.language-selector select {
+  padding: 7px 10px;
+}
+@media (max-width: 700px) {
+  header {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-tools {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .language-selector {
+    min-width: 115px;
+  }
+}

@@ -1,36 +1,65 @@
-# Guía para aprender con EasyPodcast
+# Learning software development with EasyPodcast
 
-## Sigue una petición real
+This guide assumes you know basic variables, functions and loops, but are learning how a real application connects them. Work through it in order, then use CODE_REFERENCE.md to look up every named unit and scoped variable. CONFIGURATION.md explains environment settings; DESIGN_CONTROLS.md explains all episode fields.
 
-En `frontend/src/main.tsx`, el formulario reúne objetos File en FormData. HTTP multipart permite enviar partes binarias distintas, cada una con nombre; JSON sería inadecuado para un audio grande. `src/api.ts` hace fetch al proxy `/api` y convierte errores en mensajes. React guarda Job, Design, paso y token en memoria. Cambiar un estado vuelve a renderizar la vista; no significa ejecutar FFmpeg otra vez.
+## 1. Understand the three runtimes
 
-`backend/app/main.py:create_job` recibe la petición. `uploads.py` lee el stream y escribe fragmentos en nombres internos mientras cuenta bytes: rechazar después de almacenar un archivo enorme llegaría tarde. Nunca se confía en el nombre del archivo o MIME. `media.py:validate_audio` usa FFprobe para inspeccionar pistas/duración reales. Pillow decodifica imágenes. `subtitles.py:parse_srt` valida UTF-8, tiempos, orden y texto.
+React/TypeScript runs in the browser and manages what you see. Python/FastAPI runs a local HTTP server and owns temporary jobs. Node runs a separate local Whisper inference worker. FFmpeg is another native executable launched by Python. These are separate processes: changing a React variable does not directly mutate Python memory.
 
-La respuesta HTTP 201 devuelve identificador y token. TypeScript expresa el contrato en `src/types.ts`; Pydantic valida realmente en servidor. TypeScript no protege al backend de un cliente malicioso. `Design` rechaza colores que podrían introducir filtros, valores fuera de rango y campos desconocidos.
+A variable is a named reference to a value. A function groups an operation and receives parameters. A class groups data/behavior; Job is an instance holding an episode, while Design is a Pydantic model that validates settings. A type/interface in TypeScript helps the developer before build time; Pydantic checks real untrusted requests at runtime.
 
-## Async y trabajo pesado
+## 2. Follow one upload
 
-Async sirve para esperar I/O sin monopolizar el event loop; no convierte una exportación CPU en gratuita. Las inspecciones bloqueantes se envían con `asyncio.to_thread`. Renderizar se encola en `jobs.py`, cuyo worker ejecuta FFmpeg como subproceso. Un hilo lee progreso y otro stderr para evitar tuberías llenas. Cancelar termina el árbol/grupo y solo después libera el worker.
+Open frontend/src/main.tsx and find upload. The form event provides File objects. FormData packages separate binary parts; a large audio file should not be base64 encoded into JSON. api.ts fetches /api/jobs, adding authentication only after a token exists. The same-origin path works through Vite's development proxy or FastAPI's compiled frontend.
 
-`subprocess.Popen` recibe lista de argumentos con shell=False. Concatenar texto del usuario en una línea shell permitiría comandos. Incluso sin shell, un filtergraph puede interpretar sintaxis: por eso filtros se construyen desde valores validados y textos se escriben en ASS.
+In main.py, create_job enforces a single upload slot. receive_files in uploads.py reads body chunks and writes controlled names while counting bytes. Rejecting size only after accepting an entire huge file would be too late. Uploaded filenames and MIME declarations are not trusted paths or proof of media format.
 
-## SRT, ASS y composición
+validate_audio uses FFprobe to inspect actual streams/duration. normalize_image decodes images with Pillow. parse_srt checks UTF-8, ordered time intervals and visible text. make_job creates an ID/token and places a Job in Store.jobs. The HTTP response becomes React's job and design state.
 
-SRT expresa cue inicio/final/texto. ASS añade estilos y posición. `clip_cues` toma intersección con el segmento: si un cue va de 4 a 8 segundos y la prueba empieza en 5, debe aparecer de 0 a 3. No basta con restar cinco a todo, pues produciría negativos. `make_ass` construye estilos a resolución 1920×1080. FFmpeg/libass dibuja esos textos. La UI CSS aproxima la composición y el MP4 corto permite revisarla realmente.
+## 3. Learn React state from the editor
 
-showwaves y showfreqs consumen muestras de audio; asplit conserva otra rama para AAC. Sensibilidad afecta la rama visual, no el sonido. colorkey elimina el negro del filtro antes de superponerlo, evitando un rectángulo opaco. FFprobe comprueba codec, resolución, fps y duración al finalizar.
+The tuple `[design, setDesign]` contains a value for this render and a function that schedules the next render. change copies the previous object with one changed field, sets dirty and clears saved confirmation. It does not contact the API. save sends the entire design, waits for server validation and clears dirty only after success. This explains why a failed save must not enable Continue.
 
-## Polling, archivos y secretos
+job is a server snapshot; design is an editable draft. step selects the screen. busy tracks a short HTTP action; active tracks a longer queued operation. unavailable means the job was lost or expired. revision changes artifact URLs to avoid showing an old cached preview. token is never written to browser preference storage. Read the App state table in CODE_REFERENCE.md while tracing these names.
 
-React consulta estado cada 1,5 segundos; eso es polling. El progreso deriva del tiempo FFmpeg procesado, no de una animación. IA no informa porcentaje y se muestra como fase indeterminada. Los resultados usan descarga HTTP navegable con cookie y Range; un Blob de un episodio grande duplicaría presión de memoria.
+Effects start polling, move heading focus and clean up timers. Cleanup guards stop stale promises from changing an unmounted/replaced view. Polling every 1.5 seconds is observation, not a render request. A browser rerender is unrelated to FFmpeg rendering a video.
 
-Variables de entorno configuran ejecutables, límites y proveedor. `.env` no se versiona. Cualquier variable empotrada en frontend puede ser leída por el usuario: la clave se usa solo en backend. Token de un trabajo tampoco es una clave OpenAI.
+## 4. Separate validation, state and expensive work
 
-## Pruebas y ejercicios
+Design validates colors/enums/numeric bounds. safe_layout rejects overlap. Server validation remains required even if the browser uses min/max controls: a different HTTP client can bypass the page.
 
-`tests/test_subtitles.py` prueba casos límite sin FFmpeg. `test_render.py` genera audio sintético, exporta, decodifica cuadros y compara cambios por región. Un mock de proveedor prueba contratos sin pagar, pero no demuestra que las credenciales funcionen.
+Enqueueing copies the design. One worker consumes the queue and runs FFmpeg/Node outside the event loop. Async allows waiting for I/O without blocking other requests; it does not make CPU-intensive work free. Threads drain process pipes so stdout/stderr cannot fill and deadlock the child. A lock protects shared job updates.
 
-1. Agrega un preset visual coral. Solución orientativa: cambia Design desde un botón UI, conserva validación y exige guardar; verifica prueba antes/después.
-2. Agrega un test de cue que cruza el final de preview. Solución: Cue(20,30), inicio=5, duración=20 debe resultar Cue(15,20).
-3. Explica por qué dos Uvicorn workers fallarían. Cada proceso tendría registro/cola distintos y podría recibir una consulta sin conocer ese trabajo; file lock lo impide.
-4. Añade un proveedor de pruebas que falle por timeout. Solución: inyéctalo en store.provider con monkeypatch, comprueba failed y que entradas siguen disponibles; jamás uses clave real en tests.
+Subprocess calls use argument lists with shell=False. A string joined into a shell command could execute injected syntax. Filtergraphs are another language, so their values are allowlisted and title/subtitle text is written to escaped ASS instead of interpolated as arbitrary filter commands.
+
+## 5. Understand subtitle time and text
+
+An SRT cue has start/end seconds and text. A preview beginning at second 5 clips a cue from 4–8 to 0–3: intersect with the selected segment before shifting. Simply subtracting five would create a negative start. clip_cues also tracks word offsets so highlighting remains aligned when the clip begins inside a phrase.
+
+ASS adds fonts, outline, alignment and position at 1920 × 1080. make_ass builds the document; libass draws it. wrap_text measures the real selected TTF, not a guessed character count. escape_ass prevents user text from becoming override commands. Uploaded/edited SRT lacks trustworthy word timing, so it uses normal subtitles.
+
+## 6. Understand output and cleanup
+
+showwaves/showfreqs analyze an audio branch. Another branch feeds AAC so visualizer sensitivity does not change the sound. A partial output is published only after FFprobe validates codec/resolution/fps/duration. Watching a real preview is necessary because the CSS canvas is approximate.
+
+Downloads stream with Range support; creating a browser Blob for a long MP4 could duplicate memory use. Reader leases prevent deletion during an active response. A finally block releases the lease even after disconnect. Temporary jobs have deadlines; no database reconstructs them after restart.
+
+## 7. Preferences, secrets and errors
+
+Theme and language are browser preferences. The locale store notifies React subscribers; t translates known UI messages. Never pass user-authored SRT/title text to t. Spoken audio language belongs to transcription, not the interface selector.
+
+Environment variables configure server tools and limits. An OpenAI key in frontend code would be visible to every browser user. A job token grants access to one temporary job; it is not a provider key. Sanitized errors explain recovery without exposing raw stderr or filesystem paths.
+
+## 8. Read tests as executable examples
+
+Unit tests cover pure parsing/timing/layout. API tests exercise validation and state transitions. Multimedia integration tests generate synthetic audio, render a real MP4 and inspect frames. A fake provider tests the contract without billing but cannot prove account access. A passing Linux CI run does not prove native macOS behavior.
+
+Try these exercises in a branch:
+
+1. Add a coral design preset. Update only Design draft values; preserve Save and Preview approval. Test that the backend still rejects invalid colors.
+2. Test clipping Cue(20,30) with start=5, duration=20. Expected relative interval is 15–20.
+3. Explain why two Uvicorn workers break an in-memory registry: requests can reach a process that does not own the job.
+4. Add one UI help message in both languages, then switch language during an unsaved draft and confirm the draft survives.
+5. Inject a timeout provider in a test. Verify failed state and retained input files without calling a paid API.
+
+When stuck, identify the owner of the value, its units, who changes it and how it is cleaned up. Then follow its definition and callers in CODE_REFERENCE.md.

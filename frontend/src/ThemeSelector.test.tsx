@@ -1,3 +1,6 @@
+import { beforeEach } from "vitest";
+import { setLocale } from "./i18n";
+beforeEach(() => setLocale("es"));
 // @vitest-environment jsdom
 import { afterEach, it, expect, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -9,9 +12,9 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
   vi.restoreAllMocks();
 });
-it("keeps classic by default and remembers studio without touching episode settings", async () => {
+it("keeps studio by default and remembers studio without touching episode settings", async () => {
   const view = render(<ThemeSelector />);
-  expect(document.documentElement.dataset.theme).toBe("classic");
+  expect(document.documentElement.dataset.theme).toBe("studio");
   await userEvent.selectOptions(
     screen.getByLabelText("Tema de la interfaz"),
     "studio",
@@ -31,7 +34,7 @@ it("keeps classic by default and remembers studio without touching episode setti
 });
 it("ignores unknown preferences and works when storage is blocked", async () => {
   localStorage.setItem("easypodcast-theme", "invalid");
-  expect(readTheme()).toBe("classic");
+  expect(readTheme()).toBe("studio");
   vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
     throw new Error("blocked");
   });

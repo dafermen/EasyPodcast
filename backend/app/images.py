@@ -1,3 +1,5 @@
+"""Optional paid image-provider boundary; never used implicitly."""
+
 import base64
 from pathlib import Path
 from typing import Protocol
@@ -9,11 +11,18 @@ from .media import normalize_image
 
 
 class ImageProvider(Protocol):
-    def generate_background(self, design, destination: Path) -> None: ...
+    """Describe the background-generation contract used by real and fake providers."""
+
+    def generate_background(self, design, destination: Path) -> None:
+        """Write a normalized background image at destination; raise a sanitized error on failure."""
+        ...
 
 
 class OpenAIProvider:
+    """Generate one explicitly requested image without automatically retrying billable calls."""
+
     def generate_background(self, design, destination: Path) -> None:
+        """Write a normalized background image at destination; raise a sanitized error on failure."""
         if not settings.openai_api_key or not settings.image_model:
             raise ValueError(
                 "Configura OPENAI_API_KEY e IMAGE_MODEL en el backend o usa un fondo propio/local."

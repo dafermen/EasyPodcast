@@ -1,25 +1,49 @@
-# Desarrollo
+# Developer workflow
 
-Sigue README para instalar. El backend resuelve `.env` desde la raíz del repositorio, independiente de la carpeta actual. Los scripts de inicio sitúan el proceso en `backend` para importar app. Nunca ejecutar varios workers. El frontend usa Vite en 5173 con proxy `/api` a 8000.
+Start with README installation, then read JUNIOR_GUIDE.md and CODE_REFERENCE.md. The backend resolves .env relative to the repository, not the current shell directory. Run one Uvicorn worker only.
 
-## Organización y estilo
+## Development servers
 
-No crear abstracciones vacías. Validación separada de ejecución multimedia y ciclo de vida. Español en UI/documentación; inglés en identificadores. Textos comunes en `frontend/src/text.ts`; algunos textos del asistente permanecen junto al componente y su extracción completa es una mejora pendiente.
+Run scripts/start.ps1 (Windows) or scripts/start.sh (macOS) for the backend on 8000. In another terminal:
 
-Usa `python -m ruff check app tests` y `python -m ruff format app tests` desde backend. TypeScript se comprueba con `npm run build`; pruebas con `npm test`. El repositorio no exige lint frontend independiente. No instalar paquetes globales para la aplicación. `requirements.lock` fija resolución; `package-lock.json` fija npm. Al cambiar dependencias regenera ambos y prueba.
+```powershell
+npm.cmd --prefix frontend run dev
+```
 
-Frontend: `npm run format` aplica Prettier y `npm run format:check` verifica formato. La compilación no necesita acceso a APIs externas.
+Vite serves 127.0.0.1:5173 and proxies /api to 8000. A frontend-only production build needs no backend restart. Backend changes require restart, which removes temporary episodes. A browser refresh also loses the current in-memory token; download work first.
 
-## Extensiones
+## Editing conventions
 
-Un preset debe generar un Design validado, sin filtros arbitrarios. Añade la opción UI, comprueba límites y prueba con FFmpeg real. Un proveedor implementa `ImageProvider.generate_background(design, destination)` y produce PNG normalizado; inyecta un falso solo en tests. No registrar prompts/secretos ni reintentar cobros sin acción del usuario.
+Use English identifiers, source comments and documentation. Localize UI strings in English and Spanish, including labels, accessible names, errors and progress. Keep technical enums, route names and JSON keys stable. Add entries to frontend/src/locales/en.json and call t only on UI messages. See LOCALIZATION.md.
 
-## Depuración
+Prefer explicit code over empty abstractions. Separate validation from subprocess execution and lifecycle. Explain invariants, units and side effects in docstrings; the source reference lists parameters and variables by scope. Regenerate it with `python scripts/build_code_reference.py` after symbol changes. Never edit generated sections by hand.
 
-`scripts/doctor.py` inspecciona ejecutables, encoders, filtros y fuente sin rutas ni claves en salida. `/docs` ofrece OpenAPI. Usa el pipeline CLI para aislar fallos de React. La respuesta API oculta stderr y rutas del sistema. No actives access logs con tokens en URL (el diseño no los necesita).
+## Checks
 
-Windows: invocar `npm.cmd` evita la política de ejecución de npm.ps1. FFmpeg se lanza con shell=False y rutas controladas; cancelación usa taskkill /T /F. macOS: grupo de procesos nuevo, SIGTERM y SIGKILL de respaldo. No usar rutas de unidad dentro de filtergraphs. Los scripts shell se guardan LF.
+```powershell
+.\.venv\Scripts\python.exe -m pytest backend/tests -q
+.\.venv\Scripts\python.exe -m ruff check backend/app backend/tests --config backend/pyproject.toml
+npm.cmd --prefix frontend test
+npm.cmd --prefix frontend run format:check
+npm.cmd --prefix frontend run build
+npm.cmd --prefix transcription test
+.\.venv\Scripts\python.exe scripts/doctor.py
+```
 
-## Continuar en el Mac
+Use npm run format for frontend formatting. Dependency locks are committed. Do not add global runtime dependencies. Regenerate the appropriate lock when dependencies change. CI installs dependencies from locks and runs Linux checks.
 
-Clona el repositorio y crea un entorno virtual nuevo; nunca copies `.venv` o `node_modules` entre OS. Instala FFmpeg nativo, ejecuta doctor, tests y build. El código no necesita Xcode. Repite integración multimedia y revisión visual, registra versiones y resultados en IMPLEMENTATION_STATUS. No declares compatibilidad comprobada hasta ese momento.
+## Debugging
+
+First check /api/health, then /api/capabilities or scripts/doctor.py. Missing FFmpeg filters cannot be fixed by changing React. Use /docs and /openapi.json to inspect request schemas. Use scripts/render_cli.py to isolate the media pipeline from browser state. Never log .env, tokens, full provider responses or user media. A 404/410 can mean an expired/deleted job, restart or invalid session, not a file-size limit.
+
+## Adding a feature
+
+1. Identify which layer owns it and define its validated contract.
+2. Preserve defaults for older design JSON files.
+3. Implement server validation before exposing a control.
+4. Show feedback and invalidate stale approvals as needed.
+5. Localize labels and add a meaningful behavior test.
+6. If rendering changes, verify an actual synthetic MP4, not only a mocked call.
+7. Update docs/status and regenerate the code reference.
+
+For a provider, implement ImageProvider.generate_background and inject fakes in tests. Never automatically retry a potentially billable request. For macOS, create fresh dependencies and run the multimedia suite before claiming validation.

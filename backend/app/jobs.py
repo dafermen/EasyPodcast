@@ -1,3 +1,5 @@
+"""Temporary job lifecycle, one worker, cancellation and safe cleanup."""
+
 import queue
 import secrets
 import shutil
@@ -20,6 +22,8 @@ ACTIVE = {"queued", "transcribing", "generating_image", "rendering_preview", "re
 
 @dataclass
 class Job:
+    """Hold one temporary episode, its files, state, approvals and cancellation resources."""
+
     id: str
     token: str
     path: Path
@@ -46,6 +50,7 @@ class Job:
     transcription_options: TranscriptionOptions = field(default_factory=TranscriptionOptions)
 
     def public(self):
+        """Return the token-free job snapshot exposed by status polling."""
         return {
             "id": self.id,
             "state": self.state,
@@ -70,7 +75,10 @@ class Job:
 
 
 class Store:
+    """Own the in-memory registry, locks, bounded queue, worker and managed cleanup."""
+
     def __init__(self):
+        """Initialize the instance resources; background threads are started separately."""
         self.jobs = {}
         self.lock = threading.RLock()
         self.queue = queue.Queue(maxsize=settings.queue_size)
@@ -79,6 +87,7 @@ class Store:
         self.provider = OpenAIProvider()
 
     def start(self):
+        """Lock the exclusive temporary root, remove stale managed jobs and start worker/cleaner threads."""
         self.root.mkdir(parents=True, exist_ok=True)
         if settings.temp_root.is_symlink():
             raise RuntimeError("TEMP_ROOT no puede ser un enlace simbólico.")
@@ -97,6 +106,7 @@ class Store:
         self.cleaner.start()
 
     def close(self):
+        """Request cancellation, join background threads and release managed resources and the root lock."""
         self.stop.set()
         with self.lock:
             for job in self.jobs.values():
@@ -110,6 +120,7 @@ class Store:
         self.file_lock.release()
 
     def remove_path(self, path):
+        """Remove only a direct managed child, without following a symbolic link."""
         if path.parent != self.root:
             raise RuntimeError("Ruta fuera de la raíz administrada.")
         if path.is_symlink():
@@ -118,12 +129,14 @@ class Store:
             shutil.rmtree(path)
 
     def new_path(self):
+        """Create a UUID-named directory and return its ID and path."""
         jid = uuid.uuid4().hex
         path = self.root / jid
         path.mkdir()
         return jid, path
 
     def enqueue(self, job, kind, start=0):
+        """Queue a copied Design snapshot after checking busy and queue-capacity constraints."""
         with self.lock:
             if job.state in ACTIVE or job.readers:
                 raise ValueError("El trabajo está ocupado o tiene una descarga activa.")
@@ -136,12 +149,14 @@ class Store:
             self.queue.put_nowait((job.id, kind, start, job.design.model_copy(deep=True)))
 
     def invalidate(self, job):
+        """Discard preview/video artifacts and clear approval after a design or input change."""
         for kind in ("preview", "video"):
             job.artifacts.discard(kind)
             (job.path / f"{kind}.mp4").unlink(missing_ok=True)
         job.preview_approved = False
 
     def work(self):
+        """Consume queued operations serially, publish validated artifacts and update retention/state."""
         while not self.stop.is_set():
             try:
                 jid, kind, start, design = self.queue.get(timeout=0.3)
@@ -227,10 +242,12 @@ class Store:
                 self.queue.task_done()
 
     def clean_loop(self):
+        """Periodically request cleanup until shutdown is signalled."""
         while not self.stop.wait(2):
             self.cleanup()
 
     def cleanup(self):
+        """Cancel overdue active jobs and remove expired/deleted idle jobs without active readers."""
         now = time.time()
         with self.lock:
             for jid, job in list(self.jobs.items()):
@@ -247,4 +264,5 @@ store = Store()
 
 
 def make_job(jid, path, meta, cues, warnings):
+    """Construct a temporary job with a random token and initial validated metadata."""
     return Job(jid, secrets.token_urlsafe(32), path, meta, cues, warnings)

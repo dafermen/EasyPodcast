@@ -1,3 +1,6 @@
+import { beforeEach } from "vitest";
+import { setLocale } from "./i18n";
+beforeEach(() => setLocale("es"));
 // @vitest-environment jsdom
 import { afterEach, describe, it, expect, vi } from "vitest";
 import {
@@ -218,4 +221,54 @@ describe("episode assistant", () => {
         .disabled,
     ).toBe(true);
   });
+});
+
+it("switches interface language without resetting an unsaved episode title", async () => {
+  setLocale("en");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      json: async () =>
+        url.endsWith("/capabilities")
+          ? caps
+          : { ...job, phase: "Listo para diseñar" },
+    })),
+  );
+  render(<App />);
+  const user = userEvent.setup({ applyAccept: false });
+  await screen.findByText("Media engine ready");
+  await user.upload(
+    screen.getByLabelText(/Episode audio/),
+    new File(["audio"], "demo.wav", { type: "audio/wav" }),
+  );
+  await user.upload(
+    screen.getByLabelText(/Subtitles UTF-8/),
+    new File(["srt"], "demo.srt"),
+  );
+  fireEvent.submit(
+    screen.getByRole("button", { name: "Create episode" }).closest("form")!,
+  );
+  const title = await screen.findByLabelText("Title");
+  await user.clear(title);
+  await user.type(title, "My unchanged title");
+  await user.selectOptions(screen.getByLabelText("Interface language"), "es");
+  expect((screen.getByLabelText("Título") as HTMLInputElement).value).toBe(
+    "My unchanged title",
+  );
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "Aprobar fondo y continuar →",
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(true);
+  await user.selectOptions(
+    screen.getByLabelText("Idioma de la interfaz"),
+    "en",
+  );
+  expect(screen.getByRole("button", { name: "Save design" })).toBeTruthy();
+  expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+    "My unchanged title",
+  );
 });

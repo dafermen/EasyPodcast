@@ -1,37 +1,43 @@
-# Arquitectura
+# Architecture
+
+## Layers and responsibilities
 
 ```mermaid
 flowchart LR
-  UI[React en navegador] -->|multipart / JSON / polling| API[FastAPI loopback]
-  API --> Registry[Registro y cola en memoria]
-  API --> Temp[Temporales aislados]
-  Registry --> Worker[Un hilo worker]
-  Worker --> FF[Subproceso FFmpeg]
-  Worker --> Images[Proveedor OpenAI opcional]
-  FF --> Probe[FFprobe valida salida]
-  Probe --> Download[Streaming autenticado]
+ UI[React browser UI] -->|multipart / JSON / polling| API[FastAPI on loopback]
+ API --> Store[In-memory job registry and bounded queue]
+ Store --> Temp[Managed temporary directory]
+ Store --> Worker[Single background worker]
+ Worker --> FF[Native FFmpeg and FFprobe]
+ Worker --> Whisper[Node local Whisper worker]
+ Worker --> Images[Optional image provider]
+ FF --> Download[Authenticated streaming downloads]
 ```
 
-React mantiene estado efímero; TypeScript define contratos del cliente. FastAPI y Pydantic validan la configuración; FFprobe valida contenido y FFmpeg procesa sin cargar el episodio completo en RAM. Se evita FFmpeg.wasm por consumo y límites del navegador. No hay base de datos ni servicios auxiliares.
+The browser owns form drafts, the current step and the job token. TypeScript describes the client contract but is not runtime security. Pydantic validates untrusted requests on the server. FFprobe verifies actual media content; extensions and MIME types are not trusted.
 
-`app/main.py` expone API y frontend compilado; `uploads.py` procesa multipart incremental con límites por parte. `models.py` valida números, colores y enums. `subtitles.py` parsea SRT, recorta segmentos y genera ASS. `media.py` verifica capacidades, imágenes, audio y ejecuta FFmpeg. `images.py` encapsula SDK. `jobs.py` administra registro, cola, temporales, TTL y worker.
+`main.py` exposes endpoints and the compiled frontend. `uploads.py` receives multipart chunks without loading an entire audio file into RAM. `models.py` defines bounded settings. `subtitles.py` parses SRT, clips cues, measures fonts and creates ASS. `media.py` supervises FFmpeg. `jobs.py` owns lifecycle, queue, cancellation and cleanup. `transcription.py` supervises the separate Node process. `images.py` wraps the optional provider. `fonts.py` maintains the allowlist.
 
-## Estado y concurrencia
+## Request lifecycle
 
-`ready → queued → generating_image | rendering_preview | rendering_video → completed | failed`. Cancelación: `queued/activo → cancelling → cancelled`. Al eliminar se marca para borrado y se cancela; el cleaner borra cuando el worker terminó y lectores=0. Expiración devuelve 410 mientras el registro existe; luego 404. Entradas canceladas se conservan hasta TTL. Cada operación toma una copia profunda de Design.
+Uploading creates a random UUID directory and token, validates audio/SRT/images, and returns a job snapshot. The frontend saves the token in memory. Saving a design sends a complete Design object; omitted fields reset to defaults. Approval is explicit. Enqueueing copies the design so later mutable state cannot alter the running operation.
 
-Un proceso Uvicorn; un hilo worker y uno de limpieza. Cola de dos pendientes, una carga simultánea. Un file lock exclusivo impide dos instancias sobre el mismo temporal. El render supervisa el subproceso, lee ambas tuberías con hilos, limita cola de stderr y deriva progreso de `out_time_us`. Solo marca 100% tras exit=0 y FFprobe válido. Generación de imagen no muestra porcentaje inventado. La cancelación de una llamada externa se aplica al volver la respuesta/timeout: no promete detener la facturación.
+A worker takes one queued operation, runs it and validates the output before publishing the artifact. A partial MP4 is renamed only after success. GET status exposes a snapshot; React polls every 1.5 seconds. Media downloads use HTTP Range and streaming, avoiding a full in-memory Blob.
 
-## Archivos
+## Concurrency and states
 
-UUID y token aleatorios; nombres de entrada ignorados para rutas. Cada trabajo usa audio.bin, original.srt, background.png, logo.png opcional, subtitles.ass y salidas internas. Los filtros solo contienen nombres internos relativos; evita escapes de unidad Windows. FFmpeg usa lista de argumentos, shell=False. El render parcial se renombra después de validar. Los lectores tienen una concesión liberada incluso al desconectar; la limpieza espera.
+States: ready, queued, transcribing, generating_image, rendering_preview, rendering_video, cancelling, cancelled, completed and failed. One Uvicorn process and one worker are required: multiple processes would have different registries. A file lock prevents two instances sharing TEMP_ROOT. A reentrant lock protects shared state; the queue is bounded to two pending operations by default. One upload is accepted at a time.
 
-Raíz temporal con marcador, inicialmente vacía y exclusiva; no debe ser el repositorio. Al arrancar elimina solo subcarpetas UUID administradas, sin seguir symlinks. `filelock` serializa instancias. No hay reanudación tras reinicio.
+Rendering and transcription use subprocesses, not the event loop. Reader threads drain progress and error pipes to prevent deadlock. Progress follows processed media time. Model/image loading can be indeterminate. Cancellation terminates the process tree/group; image cancellation cannot reverse external billing.
 
-## Autenticación local
+## Managed files and cleanup
 
-API exige X-Job-Token en memoria del navegador. Creación también establece cookie HttpOnly/SameSite=Strict por trabajo, limitada a `/api/jobs/{id}/artifacts`; permite `<video>` y descarga navegable con Range sin Blob gigante. Nunca token en query. No se permite CORS wildcard; Origin permitido para mutaciones y Host limitado. Sin Origin una mutación se rechaza. Producción local sirve un origen; Vite hace proxy en desarrollo. No exponer en LAN/Internet sin otra fase de autenticación y TLS.
+Input names are internal constants such as audio.bin, original.srt, background.png and logo.png. The temporary root needs a marker and exclusive ownership. Cleanup accepts only direct UUID child directories and handles symlinks without following them. Active download readers hold a lease: deletion waits until the response completes. Restart has no resume support and removes managed job directories.
 
-## Transcripción local (0.2.0)
+## Local trust boundary
 
-La cola incorpora transcribing. app/transcription.py supervisa FFmpeg PCM y el worker Node transcription/worker.mjs (Transformers.js, Whisper Tiny/Base CPU q8). Audio por ventanas de máximo 30 segundos, palabras con tiempos estimados y agrupación en cues breves. Revisión/aprobación de subtítulos antes de Diseño. ASS genera intervalos con solo la palabra activa coloreada; clip_cues conserva el desplazamiento textual al cortar una frase. Los SRT editados pierden los tiempos internos; no se usa alineación inventada. Caché de modelos persistente separada del temporal y sin audio. Ver TRANSCRIPTION.md.
+Bind to loopback. Mutations require an allowed Origin; Host is allowlisted. APIs require X-Job-Token. Artifact navigation can use a job-specific HttpOnly SameSite cookie scoped to artifacts. Tokens never appear in URLs. Media paths never come from uploaded filenames. FFmpeg receives argument lists with shell=False and controlled relative filter paths, avoiding Windows drive-letter escaping and shell injection. This design is not Internet authentication.
+
+## Presentation preferences
+
+Language and theme belong to the browser, not Design. i18n.ts exposes an external locale store; App subscribes through useSyncExternalStore so changing language rerenders labels while preserving episode state. Catalog translations are only applied to interface messages, never user titles, descriptions or subtitle text. The theme uses a root data-theme attribute and scoped CSS; it does not restyle the video composition.

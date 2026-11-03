@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import type { Design } from "./types";
 
 export const fontFamilies = {
@@ -39,6 +40,7 @@ export const logoChoices = [
   ["bottom-right", "Abajo a la derecha"],
 ] as const;
 
+/** Map the six logo placements to percentage-based composition CSS. */
 export function logoStyle(design: Design): React.CSSProperties {
   const left = design.logo_position.endsWith("left");
   const middle = design.logo_position.startsWith("middle");
@@ -59,6 +61,7 @@ export function logoStyle(design: Design): React.CSSProperties {
   };
 }
 
+/** Edit independent title/subtitle fonts, title offsets and bounded logo placement. */
 export function TypographyControls({
   design,
   disabled,
@@ -72,10 +75,11 @@ export function TypographyControls({
 }) {
   return (
     <fieldset className="typography-controls">
-      <legend>Tipografía y logo</legend>
+      <legend>{t("Tipografía y logo")}</legend>
       <div className="pair">
         <label>
-          Desplazamiento horizontal del título (px)
+          {" "}
+          {t("Desplazamiento horizontal del título (px)")}{" "}
           <input
             type="range"
             min="-600"
@@ -85,10 +89,13 @@ export function TypographyControls({
             disabled={disabled}
             onChange={(e) => change("title_offset_x", Number(e.target.value))}
           />
-          <span>{design.title_offset_x ?? 0} px · izquierda / derecha</span>
+          <span>
+            {design.title_offset_x ?? 0} {t("px · izquierda / derecha")}
+          </span>
         </label>
         <label>
-          Desplazamiento vertical del título (px)
+          {" "}
+          {t("Desplazamiento vertical del título (px)")}{" "}
           <input
             type="range"
             min="-80"
@@ -98,13 +105,16 @@ export function TypographyControls({
             disabled={disabled}
             onChange={(e) => change("title_offset_y", Number(e.target.value))}
           />
-          <span>{design.title_offset_y ?? 0} px · arriba / abajo</span>
+          <span>
+            {design.title_offset_y ?? 0} {t("px · arriba / abajo")}
+          </span>
         </label>
       </div>
       <p className="note">
-        0 conserva la posición original. Mueve los controles, guarda el diseño y
-        revisa una nueva prueba. Un título largo puede necesitar menos
-        desplazamiento o una letra más pequeña.
+        {" "}
+        {t(
+          "0 conserva la posición original. Mueve los controles, guarda el diseño y revisa una nueva prueba. Un título largo puede necesitar menos desplazamiento o una letra más pequeña.",
+        )}{" "}
       </p>
       <label className="check">
         <input
@@ -113,11 +123,12 @@ export function TypographyControls({
           disabled={disabled}
           onChange={(e) => change("title_bold", e.target.checked)}
         />
-        <strong>Negrilla en el título</strong>
+        <strong>{t("Negrilla en el título")}</strong>
       </label>
       <div className="pair">
         <label>
-          Fuente del título
+          {" "}
+          {t("Fuente del título")}{" "}
           <select
             value={design.title_font ?? "sans"}
             disabled={disabled}
@@ -127,13 +138,14 @@ export function TypographyControls({
           >
             {fontChoices.map(([id, label]) => (
               <option key={id} value={id}>
-                {label}
+                {t(label)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Tamaño del título (px)
+          {" "}
+          {t("Tamaño del título (px)")}{" "}
           <input
             type="number"
             min="28"
@@ -146,7 +158,8 @@ export function TypographyControls({
       </div>
       <div className="pair">
         <label>
-          Fuente de subtítulos
+          {" "}
+          {t("Fuente de subtítulos")}{" "}
           <select
             value={design.subtitle_font ?? "sans"}
             disabled={disabled}
@@ -156,13 +169,14 @@ export function TypographyControls({
           >
             {fontChoices.map(([id, label]) => (
               <option key={id} value={id}>
-                {label}
+                {t(label)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Tamaño de subtítulos (px)
+          {" "}
+          {t("Tamaño de subtítulos (px)")}{" "}
           <input
             type="number"
             min="28"
@@ -174,7 +188,8 @@ export function TypographyControls({
         </label>
       </div>
       <label>
-        Posición del logo
+        {" "}
+        {t("Posición del logo")}{" "}
         <select
           disabled={disabled || !hasLogo}
           value={design.logo_position ?? "top-right"}
@@ -184,13 +199,14 @@ export function TypographyControls({
         >
           {logoChoices.map(([id, label]) => (
             <option key={id} value={id}>
-              {label}
+              {t(label)}
             </option>
           ))}
         </select>
       </label>
       <label>
-        Margen del logo (px)
+        {" "}
+        {t("Margen del logo (px)")}{" "}
         <input
           type="number"
           min="20"
@@ -202,9 +218,9 @@ export function TypographyControls({
       </label>
       <p className="note">
         {hasLogo
-          ? "Comprueba en la prueba que el logo no tape texto ni rostros."
-          : "Carga un logo en Archivos para activar su posición."}{" "}
-        Los tamaños se expresan para el video de 1920 × 1080.
+          ? t("Comprueba en la prueba que el logo no tape texto ni rostros.")
+          : t("Carga un logo en Archivos para activar su posición.")}{" "}
+        {t("Los tamaños se expresan para el video de 1920 × 1080.")}{" "}
       </p>
     </fieldset>
   );

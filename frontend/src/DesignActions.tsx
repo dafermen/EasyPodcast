@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+/** Group save feedback and explicit continuation; pending changes prevent approval. */
 export function DesignActions({
   dirty,
   disabled,
@@ -16,23 +18,30 @@ export function DesignActions({
   return (
     <div className="design-actions">
       <button disabled={disabled || !dirty} onClick={onSave}>
-        {saved && !dirty ? "✓ Diseño guardado" : "Guardar diseño"}
+        {saved && !dirty ? t("✓ Diseño guardado") : t("Guardar diseño")}
       </button>
       <p role="status" className={saved && !dirty ? "saved-feedback" : "note"}>
         {disabled
-          ? (disabledMessage ?? "Espera a que termine la operación activa.")
+          ? (disabledMessage ?? t("Espera a que termine la operación activa."))
           : dirty
-            ? "Tienes cambios sin guardar. Pulsa Guardar diseño para habilitar el siguiente paso."
+            ? t(
+                "Tienes cambios sin guardar. Pulsa Guardar diseño para habilitar el siguiente paso.",
+              )
             : saved
-              ? "Diseño guardado. Revisa el fondo y pulsa Aprobar fondo y continuar."
-              : "Revisa el diseño y el fondo. Si están bien, pulsa Aprobar fondo y continuar."}
+              ? t(
+                  "Diseño guardado. Revisa el fondo y pulsa Aprobar fondo y continuar.",
+                )
+              : t(
+                  "Revisa el diseño y el fondo. Si están bien, pulsa Aprobar fondo y continuar.",
+                )}
       </p>
       <button
         className="primary continue-design"
         disabled={disabled || dirty}
         onClick={onContinue}
       >
-        Aprobar fondo y continuar →
+        {" "}
+        {t("Aprobar fondo y continuar →")}{" "}
       </button>
     </div>
   );

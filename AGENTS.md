@@ -1,11 +1,9 @@
-# EasyPodcast
+# EasyPodcast contributor instructions
 
-Aplicación web local, frontend React/TypeScript y backend Python/FastAPI con FFmpeg nativo.
-Lee README.md, docs/ARCHITECTURE.md y docs/IMPLEMENTATION_STATUS.md antes de modificar.
-Documentación e interfaz en español; código y rutas API en inglés.
-Mantén docs/IMPLEMENTATION_STATUS.md con evidencia real. No declares probado macOS sin ejecutarlo allí.
-Un solo proceso Uvicorn y un worker de render. Bind 127.0.0.1.
-Nunca incluyas claves, medios personales, temporales o resultados en Git.
-No hagas llamadas pagadas en tests ni publiques videos o despliegues automáticamente.
-La licencia del código propio es MIT, elegida por el propietario. Conserva LICENSE y los avisos/licencias de terceros; no cambies la licencia sin instrucción del propietario. No borres medios fuera de la raíz temporal administrada.
-Verificación: backend `python -m pytest -q`; frontend `npm test` y `npm run build`.
+Local web application: React/TypeScript frontend, Python/FastAPI backend, native FFmpeg and a local Node Whisper worker.
+
+Read README.md, docs/ARCHITECTURE.md and docs/IMPLEMENTATION_STATUS.md before changing code. All project documentation and source comments must be in English. The interface supports English and Spanish, with English as the initial language and Studio as the initial theme. Keep existing explicit browser preferences. Code identifiers and API routes remain English.
+
+Run one Uvicorn process with one worker and bind to 127.0.0.1. Never commit secrets, user media, model caches, temporary files or rendered videos. Do not make paid API calls in tests or publish videos/deployments automatically. Preserve the MIT license and all third-party font license notices. Never delete media outside the managed temporary root. Backend restarts destroy in-memory jobs; obtain permission when active episodes could be lost.
+
+Required checks: python -m pytest backend/tests -q; python -m ruff check backend/app backend/tests --config backend/pyproject.toml; frontend npm test, npm run format:check and npm run build; transcription npm test when relevant. Update docs/IMPLEMENTATION_STATUS.md with observed evidence; never claim native macOS validation without running there. Run python scripts/build_code_reference.py when source symbols change.

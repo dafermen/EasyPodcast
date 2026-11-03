@@ -1,23 +1,21 @@
-# Producto
+# Product specification
 
-EasyPodcast convierte un audio y su SRT sincronizado en un video descargable para un creador hispanohablante. El contenido puede estar en cualquier idioma compatible con la fuente. NotebookLM queda fuera: el usuario aporta sus archivos.
+## Purpose
 
-## Alcance de esta versión
+Provide a local, OS-independent browser workflow for creating podcast videos from audio and subtitles. Primary output: 1920 × 1080, 30 fps MP4, H.264 video with AAC audio, a static background, optional title/logo, audio-reactive waveform/frequency bars and styled subtitles.
 
-Web local multiplataforma: React/TypeScript/Vite y Python/FastAPI/FFmpeg. MP3, WAV, M4A; SRT UTF-8 con/sin BOM; fondo PNG/JPEG y logo PNG. Exportación H.264/AAC, 1920×1080, 30 fps, yuv420p, faststart. No altera velocidad/tono ni normaliza audio. Selecciona la primera pista si hay varias e informa de ello.
+## Required workflow
 
-El usuario carga, diseña, aprueba el fondo, renderiza y revisa una prueba corta, aprueba esa prueba y exporta. Cada cambio de diseño invalida prueba/video. La imagen se conserva salvo regeneración explícita. El fondo local es decorativo, sin presentadores y sin IA; el proveedor opcional pide dos adultos ficticios con espacio central e inferior libre.
+Files → optional subtitle review → Design → Preview → Export. Accept existing SRT or local Whisper generation. Design starts with manual/import choice; preserve explicit approval of subtitles, background and preview. Saving settings invalidates stale render artifacts. A preview lasts up to 20 seconds at a user-selected offset.
 
-El visualizador responde a la mezcla de audio; no detecta hablantes ni mide decibelios calibrados. No hay animación labial. La vista CSS es orientativa; la prueba MP4 es la referencia.
+UI supports English/Spanish with English default and Studio/Classic with Studio default. Explicit browser preferences persist. These preferences never change episode content or exported JSON. Font families, sizes, title position and logo placement belong to the episode design.
 
-## Aceptación
+## Constraints and acceptance
 
-Un usuario debe producir un MP4 desde navegador sin consola una vez instalado. Los errores deben ser accionables. No se debe aceptar video parcial como artefacto válido. Deben conservarse entradas para reintento tras cancelar, proteger cada trabajo y borrar medios al vencer sin interrumpir lectores activos. Los límites no constituyen garantías de rendimiento.
+One backend process, one media worker, bounded queue/upload/storage limits and supervised cancellation. Stream uploads/downloads. Reject malformed media, unsafe fields and invalid layout. Expose honest phase/progress information, actionable validation and retention deadlines. Keep secrets/backend paths out of UI responses.
 
-## Exclusiones
+Defaults: 1 GiB audio, 5 MiB SRT, 20 MiB per image, 25 million pixels, two-hour audio product limit, eight jobs, two queued operations, 512 MiB minimum free space. A product limit is not a performance guarantee. Refer to CONFIGURATION.md and IMPLEMENTATION_STATUS.md.
 
-Publicación YouTube, monetización garantizada, cuentas, colaboración remota, base de datos, historial, móviles nativos, transcripción, traducción, diarización, clonación de voz, lip sync, editor SRT completo y render distribuido. Xcode no forma parte del proyecto. El propietario decide licencia y futuras opciones de alojamiento.
+## Outside current scope
 
-## Ampliación autorizada · 0.2.0
-
-Se incorpora generación local de SRT desde audio, revisión/corrección básica y resaltado opcional de la palabra actual con tiempos estimados de Whisper. Esto amplía la exclusión inicial de transcripción. No incorpora traducción, diarización ni alineación de SRT externos. Ver TRANSCRIPTION.md.
+No lip synchronization, speaker diarization, automatic subtitle translation, cloud database/session recovery, Internet hosting/authentication, YouTube publishing, Xcode integration or guaranteed identical AI characters. No claim of native macOS verification or long-form human speech transcription accuracy yet.

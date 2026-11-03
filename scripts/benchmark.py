@@ -25,7 +25,7 @@ parser.add_argument("--output", type=Path, required=True)
 parser.add_argument("--preset", choices=["veryfast", "ultrafast", "fast", "medium"], default="veryfast")
 args = parser.parse_args()
 if not 30 <= args.minutes <= 60:
-    parser.error("El benchmark debe durar de 30 a 60 minutos.")
+    parser.error("The benchmark must last between 30 and 60 minutes.")
 args.output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[1]
 subprocess.run(
@@ -52,7 +52,7 @@ job = SimpleNamespace(
     process=None,
     active_deadline=time.time() + settings.active_ttl_seconds,
 )
-design = Design(title="Benchmark sintético EasyPodcast", preset=args.preset)
+design = Design(title="EasyPodcast synthetic benchmark", preset=args.preset)
 started = time.monotonic()
 samples = []
 done = threading.Event()
@@ -60,6 +60,7 @@ parent = psutil.Process(os.getpid())
 
 
 def monitor():
+    """Sample process-tree RSS/CPU and managed disk until the benchmark finishes."""
     last_print = 0
     while not done.wait(0.5):
         processes = [parent] + parent.children(recursive=True)

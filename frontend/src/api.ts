@@ -1,4 +1,6 @@
+import { t } from "./i18n";
 import type { Job } from "./types";
+/** Carry an HTTP status with a safe explanatory error message. */
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -8,6 +10,7 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+/** Recognize queued/running/cancelling lifecycle states that block conflicting edits. */
 export const isActive = (job: Job | null) =>
   !!job &&
   [
@@ -18,6 +21,7 @@ export const isActive = (job: Job | null) =>
     "rendering_video",
     "cancelling",
   ].includes(job.state);
+/** Fetch a same-origin API resource with header-token authentication and structured errors. */
 export async function api<T>(
   path: string,
   token?: string,
@@ -38,11 +42,12 @@ export async function api<T>(
     const detail =
       typeof data.detail === "string"
         ? data.detail
-        : "Revisa los campos y sus límites.";
+        : t("Revisa los campos y sus límites.");
     throw new ApiError(detail, response.status);
   }
   return data as T;
 }
+/** Build a same-origin media URL without placing the secret job token in its query. */
 export const artifactUrl = (
   job: Job,
   kind: string,

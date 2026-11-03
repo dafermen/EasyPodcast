@@ -1,36 +1,30 @@
-# Avisos de terceros
+# Third-party notices
 
-El código propio de EasyPodcast se distribuye bajo la licencia MIT, elegida por su propietario el 3 de noviembre de 2026. Consulta LICENSE. Esta elección no modifica las licencias ni los avisos de fuentes, modelos y dependencias de terceros.
+Original EasyPodcast code is MIT licensed, as chosen by its owner on November 3, 2026. See LICENSE. This does not replace any font, model or dependency license.
 
-## Fuente incluida
+## DejaVu fonts
 
-DejaVu Sans se incluye en `assets/fonts/DejaVuSans.ttf` con licencia íntegra en `assets/fonts/LICENSE-DejaVu.txt`. Fuente del binario: repositorio matplotlib, etiqueta v3.10.8, `lib/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf`; fuente de licencia: repositorio dejavu-fonts/dejavu-fonts. DejaVu conserva condiciones Bitstream Vera y avisos aplicables. No se modifica la fuente.
+Unmodified DejaVu Sans, Serif and Sans Mono Regular/Bold files are included in assets/fonts with the full LICENSE-DejaVu.txt. Binary source: matplotlib repository tag v3.10.8, lib/matplotlib/mpl-data/fonts/ttf. License source: dejavu-fonts/dejavu-fonts. Bitstream Vera and other applicable notices remain intact.
 
-## FFmpeg
+## FFmpeg and packages
 
-FFmpeg y FFprobe son dependencias externas; el repositorio no incluye sus binarios. Sus obligaciones dependen de la compilación: libx264 suele implicar GPL; revisar configuración y licencias antes de distribuir binarios o empaquetar instaladores. La compilación local inspeccionada anuncia GPL y version3. No asumir una licencia única para toda distribución FFmpeg. [Licencias oficiales](https://ffmpeg.org/legal.html).
+FFmpeg/FFprobe binaries are external, not bundled. Obligations depend on the build; libx264 commonly implies GPL requirements. The inspected local build reports GPL/version3. Check configuration and https://ffmpeg.org/legal.html before redistributing binaries or installers.
 
-## Paquetes
+React, Vite, FastAPI, Pillow, Pydantic, OpenAI SDK and other dependencies retain their installed licenses/notices. Locks record exact versions. Review package notices before redistribution. The creator remains responsible for rights to supplied content; no personal audio or unlicensed third-party images are bundled.
 
-React, Vite, FastAPI, Pillow, Pydantic, OpenAI SDK y demás dependencias conservan sus licencias y avisos en los paquetes instalados. Locks registran versiones exactas; revisar avisos antes de redistribuir. EasyPodcast no incluye audio personal ni imágenes de terceros sin licencia. La revisión editorial y derechos del contenido corresponden al creador.
+## Optional transcription
 
-## Transcripción opcional
+Transformers.js (@huggingface/transformers) is Apache-2.0; ONNX Runtime and transitive dependencies retain their installed licenses. Xenova/whisper-tiny and whisper-base model cards declare Apache-2.0. Model weights are not committed; they download to/reuse a local cache. Review https://huggingface.co/Xenova/whisper-tiny and https://huggingface.co/Xenova/whisper-base before redistributing models.
 
-Transformers.js (@huggingface/transformers), Apache-2.0; ONNX Runtime y dependencias conservan sus licencias instaladas. Modelos Xenova/whisper-tiny y Xenova/whisper-base: las fichas oficiales declaran Apache-2.0. No se incluyen pesos en Git. Se descargan o reutilizan localmente en caché. Revisar sus fichas/licencias antes de redistribuir modelos: https://huggingface.co/Xenova/whisper-tiny y https://huggingface.co/Xenova/whisper-base .
+## Additional font families
 
-Se incluyen además DejaVuSerif.ttf y DejaVuSansMono.ttf, sin modificar, del mismo origen matplotlib v3.10.8. Conservan la licencia DejaVu/Bitstream íntegra ya incluida en assets/fonts/LICENSE-DejaVu.txt.
+Nunito, Fredoka and Poppins retain complete SIL OFL 1.1 licenses in assets/fonts/LICENSE-nunito.txt, LICENSE-fredoka.txt and LICENSE-poppins.txt. Source: google/fonts ofl directories. Nunito/Fredoka were instantiated at 400/700 using fontTools 4.68.0; Fredoka uses normal width. Poppins files are original static fonts.
 
-## Fuentes amigables · 0.4.0
+EasyPodcast Rounded derives from Quicksand at static 400/700, renamed because Quicksand is a Reserved Font Name. Preserve LICENSE-quicksand.txt and all copyright notices. Fonts are not sold separately. fontTools was a preparation tool, not an application runtime requirement.
 
-Nunito, Fredoka y Poppins se incluyen con sus licencias SIL OFL 1.1 en assets/fonts/LICENSE-nunito.txt, LICENSE-fredoka.txt y LICENSE-poppins.txt. Origen: repositorio oficial google/fonts, directorios ofl/nunito, ofl/fredoka, ofl/poppins. Nunito/Fredoka se instanciaron a pesos estáticos 400/700 con FontTools 4.68.0; Fredoka usa anchura normal. Poppins son archivos estáticos oficiales sin modificar.
+Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible and Comic Neue come from https://github.com/google/fonts/tree/main/ofl in corresponding lowercase directories. Full OFL 1.1 licenses and original copyright notices remain in LICENSE-{family}.txt. Baloo 2, Outfit and Lexend were instantiated at 400/700 with fontTools 4.68.0 and Regular/Bold style naming; the other files are original static TTFs. The reserved name RevReading Lexend is not used. Comic Neue is not Comic Sans MS. No Windows proprietary font files are distributed or served as webfonts.
 
-EasyPodcast Rounded es una derivación estática 400/700 de Quicksand (google/fonts/ofl/quicksand), renombrada porque Quicksand es un Reserved Font Name. Se conservan derechos y licencia íntegra en LICENSE-quicksand.txt. No se vende la fuente por separado. FontTools es una herramienta de preparación, no una dependencia para usar la aplicación. Se añaden también variantes Bold oficiales DejaVu del mismo origen matplotlib v3.10.8 y licencia ya incluida.
-
-## Fuentes adicionales (2026-11-03)
-
-Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue proceden de https://github.com/google/fonts/tree/main/ofl (carpetas baloo2, outfit, balsamiqsans, lexend, atkinsonhyperlegible y comicneue). Licencias SIL OFL 1.1 completas en assets/fonts/LICENSE-{familia}.txt, con los avisos de autor originales. Baloo 2, Outfit y Lexend se instanciaron de las fuentes variables a pesos 400/700 con fontTools 4.68.0; nombres de estilo Regular/Bold. Las restantes son TTF estáticas originales sin modificar. No se usa el nombre reservado RevReading Lexend. Comic Neue no es Comic Sans MS. No se incluyen archivos de fuentes de Windows.
-
-SHA-256 de archivos incorporados:
+SHA-256 of the six additional families:
 
 - `Baloo2-Regular.ttf`: `e199f911068787e1f44c20731a127c50e8ea89ef63a5f91d35d6c645d307de90`
 - `Baloo2-Bold.ttf`: `34fb5cd63d531229a0b5597bbcc0365817c6bcb61bee19cc8a48e6de8f6dd6c1`

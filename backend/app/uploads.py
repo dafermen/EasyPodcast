@@ -10,6 +10,7 @@ from .config import settings
 
 
 async def receive_files(request, directory, require_srt=True):
+    """Stream multipart files to controlled names while enforcing per-part and disk limits."""
     media_type, options = parse_options_header(request.headers.get("content-type", ""))
     boundary = options.get(b"boundary")
     if media_type != b"multipart/form-data" or not boundary or len(boundary) > 200:
@@ -34,25 +35,30 @@ async def receive_files(request, directory, require_srt=True):
     }
 
     def part_begin():
+        """Reset multipart state before a new part begins."""
         current.update(file=None, name=None, size=0, headers={}, field=b"", value=b"", header_bytes=0)
 
     def header_field(data, start, end):
+        """Accumulate a bounded multipart header-name fragment."""
         current["header_bytes"] += end - start
         if current["header_bytes"] > 8192:
             raise HTTPException(413, "Cabeceras multipart demasiado grandes.")
         current["field"] += data[start:end]
 
     def header_value(data, start, end):
+        """Accumulate a bounded multipart header-value fragment."""
         current["header_bytes"] += end - start
         if current["header_bytes"] > 8192:
             raise HTTPException(413, "Cabeceras multipart demasiado grandes.")
         current["value"] += data[start:end]
 
     def header_end():
+        """Finalize the current multipart header field and value."""
         current["headers"][current["field"].lower()] = current["value"]
         current["field"], current["value"] = b"", b""
 
     def headers_finished():
+        """Validate part disposition and open its allowlisted destination file."""
         _, opts = parse_options_header(current["headers"].get(b"content-disposition", b""))
         name = opts.get(b"name", b"").decode("utf-8", errors="replace")
         if name not in names or name in seen or b"filename" not in opts:
@@ -62,6 +68,7 @@ async def receive_files(request, directory, require_srt=True):
         current["file"] = (directory / names[name]).open("wb")
 
     def part_data(data, start, end):
+        """Write a streamed file fragment while enforcing byte and free-space limits."""
         current["size"] += end - start
         if current["size"] > limits[current["name"]]:
             raise HTTPException(413, f"El archivo {current['name']} supera su límite.")
@@ -70,12 +77,14 @@ async def receive_files(request, directory, require_srt=True):
         current["file"].write(data[start:end])
 
     def part_end():
+        """Close and validate the current nonempty uploaded file."""
         current["file"].close()
         current["file"] = None
         if not current["size"]:
             raise HTTPException(422, "No se admiten archivos vacíos.")
 
     def finished():
+        """Record that the multipart parser reached a complete terminal boundary."""
         current["ended"] = True
 
     parser = MultipartParser(

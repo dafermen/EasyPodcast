@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { ThemeSelector } from "./ThemeSelector";
 import { DesignEntry } from "./DesignEntry";
 import { DesignActions } from "./DesignActions";
@@ -5,7 +6,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, artifactUrl, isActive, ApiError } from "./api";
 import type { Capabilities, Design, Job } from "./types";
-import { text } from "./text";
+import { getText } from "./text";
+import { LanguageSelector } from "./LanguageSelector";
+import { useLocale, setLocale } from "./i18n";
 import "./style.css";
 import {
   TypographyControls,
@@ -14,7 +17,13 @@ import {
 } from "./TypographyControls";
 import { SubtitleReview } from "./SubtitleReview";
 
+/** Own the current job, token, editable design and four-step workflow; subscribe to UI locale changes. */
 export function App() {
+  const locale = useLocale();
+  const text = getText();
+  useEffect(() => {
+    setLocale(locale);
+  }, [locale]);
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [token, setToken] = useState("");
@@ -75,19 +84,21 @@ export function App() {
     };
   }, [job?.id, token]);
 
+  /** Run an async action with busy/error feedback and recognize an unavailable job. */
   async function perform(action: () => Promise<void>) {
     setBusy(true);
     setError("");
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error inesperado.");
+      setError(e instanceof Error ? e.message : t("Error inesperado."));
       if (job && e instanceof ApiError && [404, 410].includes(e.status))
         setUnavailable(true);
     } finally {
       setBusy(false);
     }
   }
+  /** Submit selected File objects as multipart data and enter design or subtitle review. */
   async function upload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -111,11 +122,13 @@ export function App() {
       setStep(subtitleMode === "generate" ? 0 : 1);
     });
   }
+  /** Update one draft Design field and mark it unsaved without contacting the backend. */
   function change<K extends keyof Design>(key: K, value: Design[K]) {
     setDesign((d) => (d ? { ...d, [key]: value } : d));
     setDirty(true);
     setSavedDesign(false);
   }
+  /** Persist the complete Design and refresh the job snapshot only after success. */
   async function save() {
     if (!job || !design) return;
     const result = await api<Job>(
@@ -130,15 +143,19 @@ export function App() {
     setSavedDesign(true);
     setRevision((r) => r + 1);
   }
+  /** Read a bounded design JSON, validate it through the backend and retain the previous design on failure. */
   async function importDesign(file: File) {
     if (!job) return;
-    if (file.size > 16384) throw new Error("Configuración demasiado grande.");
+    if (file.size > 16384)
+      throw new Error(t("Configuración demasiado grande."));
     let data: unknown;
     try {
       data = JSON.parse(await file.text());
     } catch {
       throw new Error(
-        "El archivo no contiene JSON válido. Usa un diseño exportado desde EasyPodcast.",
+        t(
+          "El archivo no contiene JSON válido. Usa un diseño exportado desde EasyPodcast.",
+        ),
       );
     }
     const result = await api<Job>(
@@ -154,6 +171,7 @@ export function App() {
     setImportedDesign(true);
     setRevision((r) => r + 1);
   }
+  /** POST one authenticated operation and replace the local job snapshot. */
   async function action(path: string, body?: unknown) {
     if (!job) return;
     setJob(
@@ -166,6 +184,7 @@ export function App() {
     );
   }
   const disabled = busy || active || unavailable;
+  /** Download the in-memory design without needing an available backend job. */
   function saveRetainedDesign() {
     if (!design) return;
     const url = URL.createObjectURL(
@@ -187,30 +206,35 @@ export function App() {
   return (
     <div className="app">
       <header>
-        <a className="brand" href="/" aria-label="EasyPodcast inicio">
+        <a className="brand" href="/" aria-label={t("EasyPodcast inicio")}>
           <span className="mark">
-            e<span>p</span>
+            {" "}
+            {t("e")}
+            <span>{t("p")}</span>
           </span>
           {text.app}
         </a>
         <div className="header-tools">
+          <LanguageSelector />
           <ThemeSelector />
           <span className="local-badge">
-            <i /> ESTUDIO LOCAL
+            <i /> {t("ESTUDIO LOCAL")}{" "}
           </span>
         </div>
       </header>
       <main>
         <div className="intro">
-          <p className="eyebrow">DEL AUDIO A LA PANTALLA</p>
+          <p className="eyebrow">{t("DEL AUDIO A LA PANTALLA")}</p>
           <h1>{text.tagline}</h1>
           <p>
-            Convierte tu pódcast en un video con fondo, onda y subtítulos.
-            <br />
-            Un episodio, cuatro pasos. Tú decides el ritmo.
+            {" "}
+            {t(
+              "Convierte tu pódcast en un video con fondo, onda y subtítulos.",
+            )}{" "}
+            <br /> {t("Un episodio, cuatro pasos. Tú decides el ritmo.")}{" "}
           </p>
         </div>
-        <nav aria-label="Pasos del episodio">
+        <nav aria-label={t("Pasos del episodio")}>
           {text.steps.map((label, index) => (
             <button
               key={label}
@@ -226,20 +250,21 @@ export function App() {
         </nav>
         {error && (
           <div className="alert error" role="alert">
-            {error}
+            {t(error)}
           </div>
         )}
         {unavailable && (
           <div className="alert error" role="status">
-            <strong>Este episodio ya no se puede procesar.</strong>
+            <strong>{t("Este episodio ya no se puede procesar.")}</strong>
             <p>
-              El servidor conserva los archivos solo hasta su vencimiento y los
-              pierde al reiniciar. Una prueba que siga visible puede estar en la
-              memoria del navegador. Puedes guardar el diseño y volver a cargar
-              tus archivos originales.
+              {" "}
+              {t(
+                "El servidor conserva los archivos solo hasta su vencimiento y los pierde al reiniciar. Una prueba que siga visible puede estar en la memoria del navegador. Puedes guardar el diseño y volver a cargar tus archivos originales.",
+              )}{" "}
             </p>
             <button onClick={saveRetainedDesign} disabled={!design}>
-              Guardar diseño conservado (JSON)
+              {" "}
+              {t("Guardar diseño conservado (JSON)")}{" "}
             </button>{" "}
             <button
               onClick={() => {
@@ -252,14 +277,17 @@ export function App() {
                 setStep(0);
               }}
             >
-              Cargar un nuevo episodio
+              {" "}
+              {t("Cargar un nuevo episodio")}{" "}
             </button>
           </div>
         )}
         <div className="workspace">
           <section className="panel controls">
             <div className="section-heading">
-              <span className="eyebrow">PASO {step + 1} / 4</span>
+              <span className="eyebrow">
+                {t("PASO")} {step + 1} {t("/ 4")}
+              </span>
               <h2 ref={heading} tabIndex={-1}>
                 {text.steps[step]}
               </h2>
@@ -267,11 +295,14 @@ export function App() {
             {step === 0 && !job && (
               <form onSubmit={upload}>
                 <p>
-                  Sube tu audio y elige generar subtítulos localmente o cargar
-                  un SRT existente.
+                  {" "}
+                  {t(
+                    "Sube tu audio y elige generar subtítulos localmente o cargar un SRT existente.",
+                  )}{" "}
                 </p>
                 <label>
-                  Origen de los subtítulos
+                  {" "}
+                  {t("Origen de los subtítulos")}{" "}
                   <select
                     value={subtitleMode}
                     disabled={busy}
@@ -279,42 +310,51 @@ export function App() {
                       setSubtitleMode(e.target.value as "upload" | "generate")
                     }
                   >
-                    <option value="upload">Ya tengo un archivo SRT</option>
+                    <option value="upload">
+                      {t("Ya tengo un archivo SRT")}
+                    </option>
                     <option
                       value="generate"
                       disabled={!caps?.transcription?.available}
                     >
-                      Generar desde el audio (local)
+                      {" "}
+                      {t("Generar desde el audio (local)")}{" "}
                     </option>
                   </select>
                 </label>
                 {!caps?.transcription?.available && (
                   <p className="note">
-                    Motor local no instalado: ejecuta npm ci dentro de la
-                    carpeta transcription y reinicia EasyPodcast.
+                    {" "}
+                    {t(
+                      "Motor local no instalado: ejecuta npm ci dentro de la carpeta transcription y reinicia EasyPodcast.",
+                    )}{" "}
                   </p>
                 )}
                 {subtitleMode === "generate" && (
                   <>
                     <div className="pair">
                       <label>
-                        Idioma del audio
+                        {" "}
+                        {t("Idioma del audio")}{" "}
                         <select
                           value={language}
                           disabled={busy}
                           onChange={(e) => setLanguage(e.target.value)}
                         >
-                          <option value="en">Inglés</option>
-                          <option value="es">Español</option>
-                          <option value="auto">Detectar automáticamente</option>
-                          <option value="pt">Portugués</option>
-                          <option value="fr">Francés</option>
-                          <option value="de">Alemán</option>
-                          <option value="it">Italiano</option>
+                          <option value="en">{t("Inglés")}</option>
+                          <option value="es">{t("Español")}</option>
+                          <option value="auto">
+                            {t("Detectar automáticamente")}
+                          </option>
+                          <option value="pt">{t("Portugués")}</option>
+                          <option value="fr">{t("Francés")}</option>
+                          <option value="de">{t("Alemán")}</option>
+                          <option value="it">{t("Italiano")}</option>
                         </select>
                       </label>
                       <label>
-                        Modelo local
+                        {" "}
+                        {t("Modelo local")}{" "}
                         <select
                           value={transcriptionModel}
                           disabled={busy}
@@ -322,29 +362,32 @@ export function App() {
                             setTranscriptionModel(e.target.value)
                           }
                         >
-                          <option value="tiny">Tiny · rápido</option>
+                          <option value="tiny">{t("Tiny · rápido")}</option>
                           <option value="base">
-                            Base · más preciso, más lento
+                            {" "}
+                            {t("Base · más preciso, más lento")}{" "}
                           </option>
                         </select>
                       </label>
                     </div>
                     <p className="note">
-                      Audio local, sin cargos de API. La primera vez se descarga
-                      el modelo desde Hugging Face; se conserva en caché. Los
-                      tiempos por palabra son estimados y debes revisar la
-                      prueba.
+                      {" "}
+                      {t(
+                        "Audio local, sin cargos de API. La primera vez se descarga el modelo desde Hugging Face; se conserva en caché. Los tiempos por palabra son estimados y debes revisar la prueba.",
+                      )}{" "}
                     </p>
                   </>
                 )}
                 <label className="file-field">
-                  Audio del episodio{" "}
+                  {" "}
+                  {t("Audio del episodio")}{" "}
                   <small>
-                    MP3, WAV o M4A · hasta{" "}
+                    {" "}
+                    {t("MP3, WAV o M4A · hasta")}{" "}
                     {caps
                       ? Math.round(caps.limits.audio_bytes / 1024 ** 2)
                       : 1024}{" "}
-                    MiB
+                    {t("MiB")}{" "}
                   </small>
                   <input
                     name="audio"
@@ -356,7 +399,9 @@ export function App() {
                 </label>
                 {subtitleMode === "upload" && (
                   <label className="file-field">
-                    Subtítulos <small>SRT en UTF-8 · hasta 5 MiB</small>
+                    {" "}
+                    {t("Subtítulos")}{" "}
+                    <small>{t("SRT en UTF-8 · hasta 5 MiB")}</small>
                     <input
                       name="srt"
                       type="file"
@@ -367,7 +412,9 @@ export function App() {
                   </label>
                 )}
                 <label>
-                  Fondo propio <small>Opcional · PNG o JPEG</small>
+                  {" "}
+                  {t("Fondo propio")}{" "}
+                  <small>{t("Opcional · PNG o JPEG")}</small>
                   <input
                     name="image"
                     type="file"
@@ -376,7 +423,9 @@ export function App() {
                   />
                 </label>
                 <label>
-                  Logo <small>Opcional · PNG con transparencia</small>
+                  {" "}
+                  {t("Logo")}{" "}
+                  <small>{t("Opcional · PNG con transparencia")}</small>
                   <input
                     name="logo"
                     type="file"
@@ -388,7 +437,11 @@ export function App() {
                   {busy ? text.uploading : text.upload}
                 </button>
                 {job && (
-                  <p>Ya hay un episodio activo. Elimínalo para cargar otro.</p>
+                  <p>
+                    {t(
+                      "Ya hay un episodio activo. Elimínalo para cargar otro.",
+                    )}
+                  </p>
                 )}
                 <p className="note">{text.privacy}</p>
               </form>
@@ -413,7 +466,8 @@ export function App() {
                 {(designMethod === "manual" || importedDesign) && (
                   <>
                     <label>
-                      Título
+                      {" "}
+                      {t("Título")}{" "}
                       <input
                         value={design.title}
                         maxLength={120}
@@ -422,7 +476,8 @@ export function App() {
                       />
                     </label>
                     <label>
-                      Descripción visual
+                      {" "}
+                      {t("Descripción visual")}{" "}
                       <textarea
                         value={design.description}
                         maxLength={1200}
@@ -432,7 +487,8 @@ export function App() {
                     </label>
                     <div className="pair">
                       <label>
-                        Estilo de imagen
+                        {" "}
+                        {t("Estilo de imagen")}{" "}
                         <select
                           value={design.image_style}
                           disabled={disabled}
@@ -443,12 +499,15 @@ export function App() {
                             )
                           }
                         >
-                          <option value="illustration">Ilustración</option>
-                          <option value="realistic">Realista</option>
+                          <option value="illustration">
+                            {t("Ilustración")}
+                          </option>
+                          <option value="realistic">{t("Realista")}</option>
                         </select>
                       </label>
                       <label>
-                        Color de onda
+                        {" "}
+                        {t("Color de onda")}{" "}
                         <input
                           type="color"
                           value={design.color}
@@ -458,7 +517,8 @@ export function App() {
                       </label>
                     </div>
                     <label>
-                      Ambiente y paleta
+                      {" "}
+                      {t("Ambiente y paleta")}{" "}
                       <input
                         value={design.atmosphere}
                         maxLength={300}
@@ -468,7 +528,8 @@ export function App() {
                     </label>
                     <div className="pair">
                       <label>
-                        Visualizador
+                        {" "}
+                        {t("Visualizador")}{" "}
                         <select
                           value={design.visualizer}
                           disabled={disabled}
@@ -479,12 +540,15 @@ export function App() {
                             )
                           }
                         >
-                          <option value="waveform">Onda</option>
-                          <option value="spectrum">Barras de frecuencia</option>
+                          <option value="waveform">{t("Onda")}</option>
+                          <option value="spectrum">
+                            {t("Barras de frecuencia")}
+                          </option>
                         </select>
                       </label>
                       <label>
-                        Sensibilidad
+                        {" "}
+                        {t("Sensibilidad")}{" "}
                         <input
                           type="number"
                           min="0.2"
@@ -514,11 +578,12 @@ export function App() {
                             onChange={(e) =>
                               change("highlight_words", e.target.checked)
                             }
-                          />
-                          Resaltar la palabra actual
+                          />{" "}
+                          {t("Resaltar la palabra actual")}{" "}
                         </label>
                         <label>
-                          Color de resaltado
+                          {" "}
+                          {t("Color de resaltado")}{" "}
                           <input
                             type="color"
                             value={design.highlight_color}
@@ -531,16 +596,18 @@ export function App() {
                       </div>
                     ) : (
                       <p className="note">
-                        Resaltado por palabra disponible con subtítulos
-                        generados desde el audio. El SRT propio conserva
-                        subtítulos normales.
+                        {" "}
+                        {t(
+                          "Resaltado por palabra disponible con subtítulos generados desde el audio. El SRT propio conserva subtítulos normales.",
+                        )}{" "}
                       </p>
                     )}
                     <details>
-                      <summary>Composición y subtítulos</summary>
+                      <summary>{t("Composición y subtítulos")}</summary>
                       <div className="pair">
                         <label>
-                          Posición onda
+                          {" "}
+                          {t("Posición onda")}{" "}
                           <input
                             type="number"
                             min="0.3"
@@ -554,7 +621,8 @@ export function App() {
                           />
                         </label>
                         <label>
-                          Altura onda
+                          {" "}
+                          {t("Altura onda")}{" "}
                           <input
                             type="number"
                             min="0.06"
@@ -570,7 +638,8 @@ export function App() {
                       </div>
                       <div className="pair">
                         <label>
-                          Color subtítulos
+                          {" "}
+                          {t("Color subtítulos")}{" "}
                           <input
                             type="color"
                             value={design.subtitle_color}
@@ -583,7 +652,8 @@ export function App() {
                       </div>
                       <div className="pair">
                         <label>
-                          Margen inferior
+                          {" "}
+                          {t("Margen inferior")}{" "}
                           <input
                             type="number"
                             min="40"
@@ -596,7 +666,8 @@ export function App() {
                           />
                         </label>
                         <label>
-                          Contorno
+                          {" "}
+                          {t("Contorno")}{" "}
                           <input
                             type="number"
                             min="1"
@@ -610,7 +681,8 @@ export function App() {
                         </label>
                       </div>
                       <label>
-                        Ancho subtítulos
+                        {" "}
+                        {t("Ancho subtítulos")}{" "}
                         <input
                           type="number"
                           min="0.5"
@@ -624,7 +696,8 @@ export function App() {
                         />
                       </label>
                       <label>
-                        Máximo de líneas
+                        {" "}
+                        {t("Máximo de líneas")}{" "}
                         <select
                           value={design.max_lines}
                           disabled={disabled}
@@ -632,12 +705,13 @@ export function App() {
                             change("max_lines", Number(e.target.value))
                           }
                         >
-                          <option value="2">Dos líneas</option>
-                          <option value="3">Tres líneas</option>
+                          <option value="2">{t("Dos líneas")}</option>
+                          <option value="3">{t("Tres líneas")}</option>
                         </select>
                       </label>
                       <label>
-                        Preset CPU
+                        {" "}
+                        {t("Preset CPU")}{" "}
                         <select
                           value={design.preset}
                           disabled={disabled}
@@ -645,14 +719,15 @@ export function App() {
                             change("preset", e.target.value as Design["preset"])
                           }
                         >
-                          <option>veryfast</option>
-                          <option>fast</option>
-                          <option>medium</option>
-                          <option>ultrafast</option>
+                          <option>{t("veryfast")}</option>
+                          <option>{t("fast")}</option>
+                          <option>{t("medium")}</option>
+                          <option>{t("ultrafast")}</option>
                         </select>
                       </label>
                       <label>
-                        Calidad CRF (menor = más calidad)
+                        {" "}
+                        {t("Calidad CRF (menor = más calidad)")}{" "}
                         <input
                           type="number"
                           min="18"
@@ -673,8 +748,10 @@ export function App() {
                         onChange={(e) =>
                           change("trim_subtitles", e.target.checked)
                         }
-                      />
-                      Autorizar recorte de subtítulos que exceden el audio
+                      />{" "}
+                      {t(
+                        "Autorizar recorte de subtítulos que exceden el audio",
+                      )}{" "}
                     </label>
                     <DesignActions
                       dirty={dirty}
@@ -682,7 +759,9 @@ export function App() {
                       saved={savedDesign}
                       disabledMessage={
                         unavailable
-                          ? "El episodio ya no está disponible. Carga de nuevo tus archivos."
+                          ? t(
+                              "El episodio ya no está disponible. Carga de nuevo tus archivos.",
+                            )
                           : undefined
                       }
                       onSave={() => perform(save)}
@@ -694,21 +773,26 @@ export function App() {
                       }
                     />
                     <div className="ai-box">
-                      <h3>Opcional: generar otro fondo con IA</h3>
+                      <h3>{t("Opcional: generar otro fondo con IA")}</h3>
                       <p>
-                        La IA recibe título, descripción y ajustes visuales.
-                        Tiene costes externos. No recibe tu audio ni SRT.
+                        {" "}
+                        {t(
+                          "La IA recibe título, descripción y ajustes visuales. Tiene costes externos. No recibe tu audio ni SRT.",
+                        )}{" "}
                       </p>
                       <button
                         disabled={disabled || dirty || !caps?.image_provider}
                         onClick={() => perform(() => action("background"))}
                       >
-                        Generar imagen con IA
+                        {" "}
+                        {t("Generar imagen con IA")}{" "}
                       </button>
                       {!caps?.image_provider && (
                         <small>
-                          IA opcional: falta configurar el proveedor en el
-                          backend.
+                          {" "}
+                          {t(
+                            "IA opcional: falta configurar el proveedor en el backend.",
+                          )}{" "}
                         </small>
                       )}
                     </div>
@@ -719,11 +803,14 @@ export function App() {
             {job && step === 2 && (
               <div className="fields">
                 <p>
-                  Renderiza hasta 20 segundos. Esta prueba es la referencia
-                  final de composición, sonido y subtítulos.
+                  {" "}
+                  {t(
+                    "Renderiza hasta 20 segundos. Esta prueba es la referencia final de composición, sonido y subtítulos.",
+                  )}{" "}
                 </p>
                 <label>
-                  Inicio de la prueba (segundos)
+                  {" "}
+                  {t("Inicio de la prueba (segundos)")}{" "}
                   <input
                     type="number"
                     min="0"
@@ -739,7 +826,8 @@ export function App() {
                   disabled={disabled || dirty || !job.background_approved}
                   onClick={() => perform(() => action("preview", { start }))}
                 >
-                  Crear prueba de 20 segundos
+                  {" "}
+                  {t("Crear prueba de 20 segundos")}{" "}
                 </button>
                 {job.artifacts.includes("preview") && !active && (
                   <button
@@ -751,24 +839,29 @@ export function App() {
                       })
                     }
                   >
-                    Aprobar prueba y continuar →
+                    {" "}
+                    {t("Aprobar prueba y continuar →")}{" "}
                   </button>
                 )}
-                <button onClick={() => setStep(1)}>← Ajustar diseño</button>
+                <button onClick={() => setStep(1)}>
+                  {t("← Ajustar diseño")}
+                </button>
               </div>
             )}
             {job && step === 3 && !unavailable && (
               <div className="fields">
                 <p>
-                  Exporta el episodio completo con el diseño de tu prueba
-                  aprobada.
+                  {" "}
+                  {t(
+                    "Exporta el episodio completo con el diseño de tu prueba aprobada.",
+                  )}{" "}
                 </p>
                 <div className="output-spec">
-                  MP4{" "}
+                  {" "}
+                  {t("MP4")}{" "}
                   <span>
-                    1920 × 1080 · 30 fps
-                    <br />
-                    H.264 + AAC
+                    {" "}
+                    {t("1920 × 1080 · 30 fps")} <br /> {t("H.264 + AAC")}{" "}
                   </span>
                 </div>
                 <button
@@ -776,36 +869,42 @@ export function App() {
                   disabled={disabled || dirty || !job.preview_approved}
                   onClick={() => perform(() => action("render"))}
                 >
-                  Renderizar episodio
+                  {" "}
+                  {t("Renderizar episodio")}{" "}
                 </button>
                 {job.artifacts.includes("video") && !active && (
                   <a
                     className="button primary"
                     href={artifactUrl(job, "video", true, revision)}
                   >
-                    Descargar MP4
+                    {" "}
+                    {t("Descargar MP4")}{" "}
                   </a>
                 )}
                 <a
                   className="button"
                   href={artifactUrl(job, "background", true, revision)}
                 >
-                  Descargar fondo
+                  {" "}
+                  {t("Descargar fondo")}{" "}
                 </a>
                 <a className="button" href={artifactUrl(job, "config", true)}>
-                  Descargar diseño JSON
+                  {" "}
+                  {t("Descargar diseño JSON")}{" "}
                 </a>
                 <p className="note">
-                  Las descargas de video se transmiten directamente al
-                  navegador, sin cargar el MP4 completo en memoria.
+                  {" "}
+                  {t(
+                    "Las descargas de video se transmiten directamente al navegador, sin cargar el MP4 completo en memoria.",
+                  )}{" "}
                 </p>
               </div>
             )}
           </section>
-          <section className="preview-panel" aria-label="Previsualización">
+          <section className="preview-panel" aria-label={t("Previsualización")}>
             <div className="preview-top">
-              <span>LIENZO DEL EPISODIO</span>
-              <span>16:9 / 1080p</span>
+              <span>{t("LIENZO DEL EPISODIO")}</span>
+              <span>{t("16:9 / 1080p")}</span>
             </div>
             <div className="canvas">
               {job && !active ? (
@@ -821,7 +920,7 @@ export function App() {
                     <>
                       <img
                         src={artifactUrl(job, "background", false, revision)}
-                        alt="Fondo actual del episodio"
+                        alt={t("Fondo actual del episodio")}
                       />
                       <div
                         className="canvas-title"
@@ -844,12 +943,15 @@ export function App() {
                         <img
                           className="canvas-logo"
                           src={artifactUrl(job, "logo", false, revision)}
-                          alt="Logo del episodio"
+                          alt={t("Logo del episodio")}
                           style={logoStyle(design)}
                         />
                       )}
                       <div className="safe-area">
-                        Zona del visualizador · se renderiza con tu audio
+                        {" "}
+                        {t(
+                          "Zona del visualizador · se renderiza con tu audio",
+                        )}{" "}
                       </div>
                       <div
                         className="sample-caption"
@@ -860,70 +962,82 @@ export function App() {
                           bottom: `${(design?.subtitle_margin ?? 80) / 10.8}%`,
                         }}
                       >
-                        Vista de composición aproximada
+                        {" "}
+                        {t("Vista de composición aproximada")}{" "}
                       </div>
                     </>
                   )}
                 </>
               ) : (
                 <div className="empty-canvas">
-                  <div className="sound-symbol">ııⅠııⅠıı</div>
+                  <div className="sound-symbol">{t("ııⅠııⅠıı")}</div>
                   <h3>
                     {job
-                      ? "Tu episodio está en proceso"
-                      : "Aquí empieza tu próximo episodio"}
+                      ? t("Tu episodio está en proceso")
+                      : t("Aquí empieza tu próximo episodio")}
                   </h3>
                   <p>
                     {job
-                      ? "El progreso aparece abajo."
-                      : "Añade audio y subtítulos para preparar el lienzo."}
+                      ? t("El progreso aparece abajo.")
+                      : t("Añade audio y subtítulos para preparar el lienzo.")}
                   </p>
                 </div>
               )}
             </div>
             <div className="canvas-footer">
-              <span>{job ? mode : "Sin archivos cargados"}</span>
+              <span>{job ? mode : t("Sin archivos cargados")}</span>
               <span>
                 {job
                   ? `${job.metadata.duration.toFixed(1)} s · ${job.metadata.codec.toUpperCase()}`
-                  : "VISTA PREVIA"}
+                  : t("VISTA PREVIA")}
               </span>
             </div>
             {job && (
               <div className="job-status" aria-live="polite">
                 <div className="status-line">
                   <strong>
-                    {unavailable ? "Episodio no disponible" : job.phase}
+                    {unavailable ? t("Episodio no disponible") : t(job.phase)}
                   </strong>
                   {active && (
                     <button
                       disabled={busy}
                       onClick={() => perform(() => action("cancel"))}
                     >
-                      Cancelar
+                      {" "}
+                      {t("Cancelar")}{" "}
                     </button>
                   )}
                 </div>
                 {!unavailable && job.progress !== null && (
                   <>
                     <progress value={job.progress} max="1" />
-                    <span>{Math.floor(job.progress * 100)} %</span>
+                    <span>
+                      {Math.floor(job.progress * 100)} {t("%")}
+                    </span>
                   </>
                 )}
-                {job.error && <p className="error-text">{job.error}</p>}
+                {job.error && <p className="error-text">{t(job.error)}</p>}
                 {job.warnings.length > 0 && (
                   <details open>
-                    <summary>Observaciones ({job.warnings.length})</summary>
+                    <summary>
+                      {t("Observaciones (")}
+                      {job.warnings.length}
+                      {t(")")}
+                    </summary>
                     <ul>
                       {job.warnings.map((w, i) => (
-                        <li key={i}>{w}</li>
+                        <li key={i}>{t(w)}</li>
                       ))}
                     </ul>
                   </details>
                 )}
                 <p className="note">
-                  Vence: {new Date(job.expires_at).toLocaleString("es")}. Al
-                  reiniciar el backend se pierden los trabajos.
+                  {" "}
+                  {t("Vence:")}{" "}
+                  {new Date(job.expires_at).toLocaleString(
+                    locale === "en" ? "en-US" : "es-ES",
+                  )}
+                  {t(". Al reiniciar el backend se pierden los trabajos.")}{" "}
                 </p>
                 <button
                   className="danger"
@@ -938,7 +1052,8 @@ export function App() {
                     })
                   }
                 >
-                  Eliminar episodio y archivos
+                  {" "}
+                  {t("Eliminar episodio y archivos")}{" "}
                 </button>
               </div>
             )}
@@ -946,8 +1061,8 @@ export function App() {
               <summary>
                 <span className={caps?.render_ready ? "dot ready" : "dot"} />
                 {caps?.render_ready
-                  ? "Motor audiovisual listo"
-                  : "Diagnóstico de dependencias"}
+                  ? t("Motor audiovisual listo")
+                  : t("Diagnóstico de dependencias")}
               </summary>
               {caps ? (
                 <>
@@ -961,27 +1076,31 @@ export function App() {
                       ...caps.filters,
                     }).map(([key, ok]) => (
                       <span key={key}>
-                        {ok ? "✓" : "×"} {key}
+                        {ok ? t("✓") : "×"} {key}
                       </span>
                     ))}
                   </div>
                   <p>
-                    Límite de producto: {caps.limits.duration_seconds / 60} min
-                    · un render simultáneo · {caps.limits.queue} en cola.
-                    Benchmark sintético de 30 min disponible en la
-                    documentación; 120 min aún sin verificar.
+                    {" "}
+                    {t("Límite de producto:")}{" "}
+                    {caps.limits.duration_seconds / 60}{" "}
+                    {t("min · un render simultáneo ·")} {caps.limits.queue}{" "}
+                    {t(
+                      "en cola. Benchmark sintético de 30 min disponible en la documentación; 120 min aún sin verificar.",
+                    )}{" "}
                   </p>
                 </>
               ) : (
-                <p>Conectando al backend…</p>
+                <p>{t("Conectando al backend…")}</p>
               )}
             </details>
           </section>
         </div>
       </main>
       <footer>
-        Hecho para escuchar. Diseñado para compartir.
-        <span>EasyPodcast · 0.4.1</span>
+        {" "}
+        {t("Hecho para escuchar. Diseñado para compartir.")}{" "}
+        <span>{t("EasyPodcast · 0.4.1")}</span>
       </footer>
     </div>
   );

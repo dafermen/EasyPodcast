@@ -1,29 +1,19 @@
-## Nuevas fuentes · 2026-11-03
+# Design controls
 
-Se añaden Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue para títulos y subtítulos, con pesos Regular/Bold locales. Comic Neue es una alternativa libre de estilo parecido a Comic Sans, no la fuente de Microsoft. Comic Sans no se redistribuye ni se sirve como webfont. Selección en Diseño → Tipografía y logo; guarda y genera otra prueba. JSON conserva la familia elegida.
+Design is a validated Pydantic model and a matching TypeScript interface. Coordinates and font sizes target 1920 × 1080 output, regardless of browser size. PATCH config replaces the entire model; omitted fields get defaults. Older JSON files work through those defaults.
 
-## Posición del título · 2026-11-03
+| Group | Fields and meaning |
+| --- | --- |
+| Context | title (120 characters), description (1200), atmosphere (300), image_style illustration/realistic |
+| Visualizer | visualizer waveform/spectrum; color #RRGGBB; sensitivity 0.2–4; wave_y 0.3–0.65 and wave_height 0.06–0.22 are canvas fractions |
+| Title | title_font; title_bold; title_font_size 28–110 px; title_offset_x −600…600 px and title_offset_y −80…400 px |
+| Subtitles | subtitle_font; font_size 28–72 px; subtitle_color; outline 1–6; subtitle_margin 40–180 px; subtitle_width 0.5–0.9; max_lines 2/3 |
+| Timing | trim_subtitles requires explicit permission; highlight_words and highlight_color use estimated model word timing when available |
+| Logo | six logo_position choices, logo_margin 20–160 px; only relevant when a logo was uploaded |
+| Encoding | crf 18–28 (lower is higher quality); preset ultrafast/veryfast/fast/medium |
 
-En Diseño → Tipografía y logo, los controles de desplazamiento horizontal y vertical mueven el título. Valores negativos: izquierda/arriba; positivos: derecha/abajo. 0 conserva la posición original. Los valores se expresan en píxeles del video 1920 × 1080 y se guardan en JSON (title_offset_x/title_offset_y); diseños anteriores usan 0.
+The title anchor is top-center at (960 + title_offset_x, 100 + title_offset_y). Wrapping width shrinks near the edges, up to 1600 px. Titles are limited to three lines and must fit above the visualizer. Large offsets may require shorter text or smaller type. Subtitle/visualizer overlap is also rejected.
 
-La composición muestra los cambios antes de guardar. Guarda, aprueba el fondo y genera otra prueba para verificar el resultado real. El ancho disponible se ajusta al desplazamiento; si el título no cabe, reduce tamaño, texto o desplazamiento. Límites: horizontal ±600 px, vertical −80 a 400 px, sujeto al espacio sobre el visualizador. El backend debe reiniciarse para activar estos campos; el reinicio pierde trabajos temporales.
+Included families: DejaVu Sans/Serif/Mono, Nunito, Fredoka, Rounded (derived from Quicksand), Poppins, Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible and Comic Neue. Each includes Regular/Bold files. Comic Neue is a libre Comic Sans-style alternative, not Comic Sans MS. Fonts are used by browser composition, Pillow measurement and libass rendering. See THIRD_PARTY_NOTICES.md for licenses and provenance.
 
-# Tipografía y posición del logo
-
-Antes de generar la prueba o exportar, abre **Diseño → Tipografía y logo**.
-
-- Fuente del título y fuente de subtítulos independientes: DejaVu Sans, DejaVu Serif y DejaVu Sans Mono. Se incluyen con licencia; no requieren fuentes instaladas en el sistema ni servicios externos.
-- Tamaño del título: 28–110 px. Tamaño de subtítulos: 28–72 px. Los números corresponden a un video de 1920×1080, no a los píxeles de la ventana del navegador.
-- Logo: arriba, centro o abajo, a izquierda o derecha; margen de 20–160 px. Los controles se habilitan si se cargó un logo PNG en Archivos.
-
-La vista de composición carga las mismas fuentes del backend y muestra el logo. Es aproximada; **la prueba MP4 es la referencia final**. Evita tapar título, subtítulos o rostros con el logo. Si un título muy grande no cabe sobre la onda, se explica el problema para reducir tamaño o texto.
-
-Pulsa **Guardar diseño** tras ajustar. Se invalidan pruebas y videos anteriores; genera una prueba nueva, revísala y apruébala antes de exportar. La configuración JSON conserva fuente, tamaños, posición y margen. Los JSON anteriores reciben valores predeterminados compatibles.
-
-API: Design añade title_font, subtitle_font (sans/serif/mono), title_font_size, logo_position y logo_margin; font_size sigue siendo el tamaño de subtítulos. `/api/fonts/{key}` sirve únicamente las fuentes incluidas mediante una lista permitida. El logo del trabajo se consulta en `/api/jobs/{id}/artifacts/logo`, con la misma autenticación que el resto de medios. No se admiten nombres de fuentes, rutas o filtros arbitrarios del cliente.
-
-Validación: 56 pruebas backend y 9 frontend pasaron en Windows. Incluye estilos ASS, límites, rutas de fuentes, acceso al logo y renders FFmpeg reales con Serif en título, Mono en subtítulos y logos arriba a la izquierda/abajo a la derecha, comprobados por píxeles. macOS nativo y preferencias visuales del usuario siguen pendientes de revisión.
-
-## Fuentes amigables y negrilla (0.4.0)
-
-Se añaden Nunito (redondeada), Fredoka (expresiva), Rounded (derivada de Quicksand) y Poppins (moderna). Están disponibles tanto para título como para subtítulos. La casilla Negrilla en el título selecciona archivos Regular/Bold de peso 400/700. El peso se comparte entre la vista del navegador, la medición del ajuste de líneas y ASS/FFmpeg. Los diseños JSON conservan title_bold; si se omite, sigue siendo true para mantener el título anterior. No se descargan fuentes durante el uso: todos los archivos y licencias están incluidos.
+Save settings, approve background and render a new preview after changes. The composition canvas approximates the output; the rendered MP4 decides exact font wrapping and timing. Exported JSON contains only settings, not the background, logo, media or current session. UI language/theme do not belong to Design.

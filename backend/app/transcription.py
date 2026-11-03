@@ -13,6 +13,7 @@ from .subtitles import Cue, Word, render_srt
 
 
 def available():
+    """Check the Node executable and installed local inference package without downloading models."""
     return bool(
         shutil.which(settings.node)
         and (ROOT / "transcription/node_modules/@huggingface/transformers/package.json").is_file()
@@ -20,6 +21,7 @@ def available():
 
 
 def supervise(job, args, on_event=None):
+    """Run FFmpeg or Node while monitoring cancellation, timeout, disk space and JSON progress."""
     process = subprocess.Popen(
         args,
         cwd=job.path,
@@ -34,6 +36,7 @@ def supervise(job, args, on_event=None):
     job.process = process
 
     def read():
+        """Drain child-process JSON events and ignore malformed or oversized event lines."""
         for line in process.stdout:
             if on_event and len(line) < 8192:
                 try:
@@ -67,6 +70,7 @@ def supervise(job, args, on_event=None):
 
 
 def transcript_cues(data, duration):
+    """Validate recognized words and group them into readable subtitle cues."""
     raw = data.get("words", [])
     if not raw or len(raw) > 150_000:
         raise ValueError("No se detectaron palabras con tiempos válidos.")
@@ -94,6 +98,7 @@ def transcript_cues(data, duration):
 
 
 def transcribe(job):
+    """Convert audio, run local inference, validate results and remove PCM/JSON intermediates."""
     if not available():
         raise ValueError(
             "Instala el motor local con npm ci en la carpeta transcription y reinicia EasyPodcast."
@@ -131,6 +136,7 @@ def transcribe(job):
         )
 
         def event(data):
+            """Convert worker phase/progress events into safe job status updates."""
             if data.get("phase") == "loading_model":
                 job.phase = "Cargando modelo local (primera vez: descarga de Hugging Face)"
                 job.progress = None

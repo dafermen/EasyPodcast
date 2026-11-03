@@ -1,3 +1,6 @@
+import { beforeEach } from "vitest";
+import { setLocale } from "./i18n";
+beforeEach(() => setLocale("es"));
 // @vitest-environment jsdom
 import { afterEach, it, expect, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
