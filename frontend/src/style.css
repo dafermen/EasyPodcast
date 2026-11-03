@@ -730,3 +730,215 @@ footer {
   font-weight: 700;
   font-display: swap;
 }
+
+/* Interface themes deliberately exclude the episode canvas. */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.theme-selector {
+  font-size: 11px;
+  min-width: 185px;
+}
+.theme-selector select {
+  padding: 7px 10px;
+}
+:root[data-theme="studio"] {
+  color-scheme: dark;
+  color: #e8edf8;
+  background: #0b1020;
+  font-family: EpisodeOutfit, system-ui, sans-serif;
+}
+[data-theme="studio"] body {
+  background:
+    radial-gradient(ellipse at 85% 0%, #172144 0%, transparent 45%), #0b1020;
+}
+[data-theme="studio"] header {
+  border-color: #29334b;
+  background: #0b1020e8;
+}
+[data-theme="studio"] .brand {
+  color: #f0f5ff;
+}
+[data-theme="studio"] .mark {
+  background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+  color: #07101e;
+  box-shadow: 0 0 24px #22d3ee20;
+}
+[data-theme="studio"] .mark span {
+  color: #fff;
+}
+[data-theme="studio"] main {
+  max-width: 1680px;
+  padding-top: 30px;
+}
+[data-theme="studio"] h1 {
+  font-weight: 600;
+  letter-spacing: -1.5px;
+}
+[data-theme="studio"] .intro {
+  border-left: 3px solid #8b5cf6;
+  padding-left: 20px;
+  margin-bottom: 28px;
+}
+[data-theme="studio"] .intro > p:last-child,
+[data-theme="studio"] .controls p,
+[data-theme="studio"] small,
+[data-theme="studio"] .job-status li,
+[data-theme="studio"] .diagnostics {
+  color: #aab8cf;
+}
+[data-theme="studio"] .eyebrow,
+[data-theme="studio"] .preview-top,
+[data-theme="studio"] .canvas-footer {
+  color: #98abca;
+}
+[data-theme="studio"] .panel,
+[data-theme="studio"] .job-status {
+  background: #151d30;
+  border-color: #2b3650;
+  border-radius: 18px;
+  box-shadow: 0 18px 48px #00000025;
+}
+[data-theme="studio"] .workspace {
+  grid-template-columns: minmax(320px, 0.8fr) minmax(440px, 1.8fr);
+}
+[data-theme="studio"] nav {
+  background: #11192c;
+  border: 1px solid #29334b;
+  border-radius: 12px;
+  padding: 6px;
+  gap: 6px;
+}
+[data-theme="studio"] .step {
+  border: 0;
+  border-radius: 8px;
+  color: #9dacca;
+}
+[data-theme="studio"] .step span {
+  border-color: #465474;
+}
+[data-theme="studio"] .step.current {
+  background: #22304d;
+  color: #67e8f9;
+  box-shadow: inset 0 -2px #22d3ee;
+}
+[data-theme="studio"] .step.current span {
+  background: #22d3ee;
+  border-color: #22d3ee;
+  color: #07101e;
+}
+[data-theme="studio"] input,
+[data-theme="studio"] textarea,
+[data-theme="studio"] select {
+  background: #0e1628;
+  color: #e8edf8;
+  border-color: #3a4763;
+  border-radius: 9px;
+  accent-color: #22d3ee;
+}
+[data-theme="studio"] input::file-selector-button {
+  background: #263650;
+  color: #a5f3fc;
+}
+[data-theme="studio"] input::placeholder,
+[data-theme="studio"] textarea::placeholder {
+  color: #92a1ba;
+}
+[data-theme="studio"] button,
+[data-theme="studio"] .button {
+  background: #202c44;
+  border-color: #41516e;
+  color: #e8edf8;
+  border-radius: 9px;
+}
+[data-theme="studio"] button:hover:not(:disabled),
+[data-theme="studio"] .button:hover {
+  background: #304362;
+}
+[data-theme="studio"] .primary {
+  background: #22d3ee;
+  border-color: #22d3ee;
+  color: #07101e;
+}
+[data-theme="studio"] .primary:hover:not(:disabled) {
+  background: #67e8f9;
+}
+[data-theme="studio"] .continue-design {
+  background: #34d399;
+  border-color: #34d399;
+  color: #06291f;
+}
+[data-theme="studio"] .continue-design:hover:not(:disabled) {
+  background: #6ee7b7;
+}
+[data-theme="studio"] :focus-visible {
+  outline: 3px solid #a78bfa;
+  outline-offset: 3px;
+}
+[data-theme="studio"] .file-field {
+  background: #101c30;
+  border-color: #536589;
+}
+[data-theme="studio"] .ai-box {
+  background: #201c39;
+  border: 1px solid #4b3d71;
+}
+[data-theme="studio"] .design-entry,
+[data-theme="studio"] .typography-controls {
+  border-color: #3a4763;
+}
+[data-theme="studio"] .design-actions {
+  background: #102b2a;
+  border-color: #2b6659;
+}
+[data-theme="studio"] .controls .saved-feedback {
+  color: #6ee7b7;
+}
+[data-theme="studio"] .note {
+  color: #aab8cf !important;
+}
+[data-theme="studio"] .error {
+  background: #381d2b;
+  color: #fecdd3;
+  border-color: #8d4055;
+}
+[data-theme="studio"] .error-text,
+[data-theme="studio"] .danger {
+  color: #fda4af;
+}
+[data-theme="studio"] .danger {
+  background: transparent;
+  border-color: #794255;
+}
+[data-theme="studio"] .output-spec {
+  background: #202d46;
+}
+[data-theme="studio"] .chips span,
+[data-theme="studio"] .diagnostics,
+[data-theme="studio"] footer {
+  border-color: #34415b;
+}
+[data-theme="studio"] progress {
+  accent-color: #22d3ee;
+}
+@media (max-width: 900px) {
+  [data-theme="studio"] .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .header-tools {
+    gap: 12px;
+  }
+  .header-tools .local-badge {
+    display: none;
+  }
+  .theme-selector {
+    min-width: 145px;
+  }
+  [data-theme="studio"] main {
+    padding: 24px 4%;
+  }
+}

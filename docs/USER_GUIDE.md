@@ -1,3 +1,7 @@
+## Temas de interfaz (2026-11-03)
+
+El selector Tema de la interfaz, en la cabecera, ofrece Clásico (original y predeterminado) y Estudio (azul noche, cian y violeta, con Outfit). La selección se aplica inmediatamente y se recuerda en este navegador; funciona durante la sesión aunque el almacenamiento esté bloqueado. No forma parte del JSON del episodio ni modifica el MP4, los colores del visualizador o las fuentes elegidas para el video. Aprobar fondo y continuar mantiene el verde. Este cambio no requiere reiniciar el backend.
+
 ## Nuevas fuentes · 2026-11-03
 
 Se añaden Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue para títulos y subtítulos, con pesos Regular/Bold locales. Comic Neue es una alternativa libre de estilo parecido a Comic Sans, no la fuente de Microsoft. Comic Sans no se redistribuye ni se sirve como webfont. Selección en Diseño → Tipografía y logo; guarda y genera otra prueba. JSON conserva la familia elegida.

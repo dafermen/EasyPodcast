@@ -1,3 +1,4 @@
+import { ThemeSelector } from "./ThemeSelector";
 import { DesignEntry } from "./DesignEntry";
 import { DesignActions } from "./DesignActions";
 import React, { useEffect, useRef, useState } from "react";
@@ -192,9 +193,12 @@ export function App() {
           </span>
           {text.app}
         </a>
-        <span className="local-badge">
-          <i /> ESTUDIO LOCAL
-        </span>
+        <div className="header-tools">
+          <ThemeSelector />
+          <span className="local-badge">
+            <i /> ESTUDIO LOCAL
+          </span>
+        </div>
       </header>
       <main>
         <div className="intro">

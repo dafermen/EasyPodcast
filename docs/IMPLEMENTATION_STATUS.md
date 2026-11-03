@@ -1,3 +1,9 @@
+## Temas de interfaz (2026-11-03)
+
+Verificación Windows: 18 pruebas frontend y build correctos. Navegador real: cambio Clásico/Estudio, persistencia tras recarga y regreso al clásico. Captura: docs/screenshots/theme-studio.png. No se reinició el backend.
+
+El selector Tema de la interfaz, en la cabecera, ofrece Clásico (original y predeterminado) y Estudio (azul noche, cian y violeta, con Outfit). La selección se aplica inmediatamente y se recuerda en este navegador; funciona durante la sesión aunque el almacenamiento esté bloqueado. No forma parte del JSON del episodio ni modifica el MP4, los colores del visualizador o las fuentes elegidas para el video. Aprobar fondo y continuar mantiene el verde. Este cambio no requiere reiniciar el backend.
+
 ## Seis nuevas fuentes (2026-11-03)
 
 Añadidas Baloo 2, Outfit, Balsamiq Sans, Lexend, Atkinson Hyperlegible y Comic Neue, Regular/Bold para título y subtítulos. Comic Neue figura como alternativa de estilo Comic Sans; no se redistribuye Comic Sans MS. Licencias OFL y hashes en THIRD_PARTY_NOTICES.md. Fuentes locales para composición, medición y FFmpeg.
