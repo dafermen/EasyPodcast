@@ -16,3 +16,7 @@ Remaining validation: native macOS, long human recordings and Whisper Base quali
 ## Completed studio expansion · 2026-11-03
 
 Local project library/history/duplicate and recovery; debounced versioned appearance drafts; brand templates with background/logo; direct title/logo positioning and resizing with guides; audio-assisted subtitle timing/text editor; measured preflight; landscape/portrait/square rendering; SRT export link. Remaining checks include long-form library storage/backup workflows, native macOS and accessibility review. No automatic paid requests or publishing were added.
+
+## Portable library expansion · 2026-11-05
+
+Implemented project ZIP transfer, complete library backup/merge restore, search/sort/rename, recoverable Trash with typed purge, storage reporting and generation-protected raw subtitle recovery. Remaining validation includes native macOS roundtrips, very large archives/libraries, interrupted OS shutdown, assistive technology and long human speech quality.

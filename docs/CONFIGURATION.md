@@ -31,3 +31,7 @@ Only the backend reads .env at the repository root. Pydantic Settings also reads
 Browser preferences: easypodcast-language is en/es, default en; easypodcast-theme is classic/studio, default studio. Explicit stored preferences win. They are not .env fields, API settings or Design fields. Job tokens remain in memory.
 
 Episode parameters are documented in DESIGN_CONTROLS.md and generated /openapi.json. Fields omitted from an imported Design receive model defaults. Invalid values, NaN and unexpected fields are rejected.
+
+## Portable-package budgets
+
+MAX_BUNDLE_BYTES defaults to 17179869184 (16 GiB), bounding built ZIPs and raw import uploads. MAX_BUNDLE_EXPANDED_BYTES defaults to 34359738368 (32 GiB), bounding extracted data. Existing per-audio/image/SRT limits also apply. MIN_FREE_BYTES is reserved during build/extraction/copy. Packages need temporary space in addition to library media; incomplete imports and idle tickets are cleaned up. Large-library performance is not implied by these upper bounds.

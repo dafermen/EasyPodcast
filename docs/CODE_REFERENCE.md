@@ -22,6 +22,8 @@ Source: [backend/app/config.py:10](../backend/app/config.py).
 | --- | --- | --- |
 | `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `SettingsConfigDict(env_file=Path(__file__).resolve().parents[2] / '.env', extra='ignore')` |
 | `library_root` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Path.home() / '.easypodcast' / 'library'` |
+| `max_bundle_bytes` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(16 * 1024 ** 3, gt=0)` |
+| `max_bundle_expanded_bytes` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(32 * 1024 ** 3, gt=0)` |
 | `ffmpeg` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'ffmpeg'` |
 | `ffprobe` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'ffprobe'` |
 | `node` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'node'` |
@@ -169,12 +171,13 @@ Source: [backend/app/jobs.py:25](../backend/app/jobs.py).
 | `transcription_options` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `field(default_factory=TranscriptionOptions)` |
 | `project_id` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `None` |
 | `archive_error` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `None` |
+| `subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `False` |
 
 ### `Job.public(self)`
 
 Return the token-free job snapshot exposed by status polling.
 
-Source: [backend/app/jobs.py:55](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:56](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -186,13 +189,13 @@ Source: [backend/app/jobs.py:55](../backend/app/jobs.py).
 
 Own the in-memory registry, locks, bounded queue, worker and managed cleanup.
 
-Source: [backend/app/jobs.py:82](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:84](../backend/app/jobs.py).
 
 ### `Store.__init__(self)`
 
 Initialize the instance resources; background threads are started separately.
 
-Source: [backend/app/jobs.py:85](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:87](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -209,7 +212,7 @@ Source: [backend/app/jobs.py:85](../backend/app/jobs.py).
 
 Lock the exclusive temporary root, remove stale managed jobs and start worker/cleaner threads.
 
-Source: [backend/app/jobs.py:94](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:96](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -226,7 +229,7 @@ Source: [backend/app/jobs.py:94](../backend/app/jobs.py).
 
 Request cancellation, join background threads and release managed resources and the root lock.
 
-Source: [backend/app/jobs.py:113](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:115](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -238,7 +241,7 @@ Source: [backend/app/jobs.py:113](../backend/app/jobs.py).
 
 Remove only a direct managed child, without following a symbolic link.
 
-Source: [backend/app/jobs.py:127](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:129](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 - `path`: Controlled filesystem location, never an uploaded filename.
@@ -247,7 +250,7 @@ Source: [backend/app/jobs.py:127](../backend/app/jobs.py).
 
 Create a UUID-named directory and return its ID and path.
 
-Source: [backend/app/jobs.py:136](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:138](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -260,7 +263,7 @@ Source: [backend/app/jobs.py:136](../backend/app/jobs.py).
 
 Queue a copied Design snapshot after checking busy and queue-capacity constraints.
 
-Source: [backend/app/jobs.py:143](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:145](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -279,7 +282,7 @@ Source: [backend/app/jobs.py:143](../backend/app/jobs.py).
 
 Keep a durable recovery copy; expose save failures instead of hiding them.
 
-Source: [backend/app/jobs.py:156](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:158](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -292,7 +295,7 @@ Source: [backend/app/jobs.py:156](../backend/app/jobs.py).
 
 Discard preview/video artifacts and clear approval after a design or input change.
 
-Source: [backend/app/jobs.py:169](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:171](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -306,7 +309,7 @@ Source: [backend/app/jobs.py:169](../backend/app/jobs.py).
 
 Consume queued operations serially, publish validated artifacts and update retention/state.
 
-Source: [backend/app/jobs.py:176](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:178](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -338,15 +341,19 @@ Source: [backend/app/jobs.py:176](../backend/app/jobs.py).
 
 Periodically request cleanup until shutdown is signalled.
 
-Source: [backend/app/jobs.py:264](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:266](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `cleanup` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `getattr(self, 'transfer_cleanup', None)` |
 
 ### `Store.cleanup(self)`
 
 Cancel overdue active jobs and remove expired/deleted idle jobs without active readers.
 
-Source: [backend/app/jobs.py:269](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:274](../backend/app/jobs.py).
 
 - `self`: The current Python class instance.
 
@@ -361,7 +368,7 @@ Source: [backend/app/jobs.py:269](../backend/app/jobs.py).
 
 Construct a temporary job with a random token and initial validated metadata.
 
-Source: [backend/app/jobs.py:286](../backend/app/jobs.py).
+Source: [backend/app/jobs.py:291](../backend/app/jobs.py).
 
 - `jid`: Random public job ID; a separate secret token is required.
 - `path`: Controlled filesystem location, never an uploaded filename.
@@ -382,7 +389,7 @@ Durable local projects and brand templates, separate from disposable render work
 
 Prepare an exclusive persistent directory; never reuse an unrelated populated folder.
 
-Source: [backend/app/library.py:33](../backend/app/library.py).
+Source: [backend/app/library.py:34](../backend/app/library.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
@@ -394,20 +401,26 @@ Source: [backend/app/library.py:33](../backend/app/library.py).
 
 Open a short-lived SQLite connection; callers serialize file/database changes with LOCK.
 
-Source: [backend/app/library.py:49](../backend/app/library.py).
+Source: [backend/app/library.py:50](../backend/app/library.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'PRAGMA table_info({table})')` |
 | `path` | Controlled filesystem location, never an uploaded filename. | `root() / 'library.sqlite3'` |
 | `connection` | Short-lived SQLite connection, committed and closed by the context manager. | `sqlite3.connect(path, timeout=30)` |
 | `connection.row_factory` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `sqlite3.Row` |
+| `table` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'projects': {'display_name': 'TEXT', 'deleted_at': 'REAL', 'subtitle_draft': 'TEXT', 'subtitle_version': 'INTEGER NOT NULL DEFAULT 0'}, 'templates': {'deleted_at': 'REAL'}}.items()` |
+| `additions` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'projects': {'display_name': 'TEXT', 'deleted_at': 'REAL', 'subtitle_draft': 'TEXT', 'subtitle_version': 'INTEGER NOT NULL DEFAULT 0'}, 'templates': {'deleted_at': 'REAL'}}.items()` |
+| `columns` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{row[1] for row in connection.execute(f'PRAGMA table_info({table})')}` |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `additions.items()` |
+| `definition` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `additions.items()` |
 
 ### `owner_key()`
 
 Return a machine-local library capability; it is never placed in localStorage or URLs.
 
-Source: [backend/app/library.py:70](../backend/app/library.py).
+Source: [backend/app/library.py:84](../backend/app/library.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
@@ -418,7 +431,7 @@ Source: [backend/app/library.py:70](../backend/app/library.py).
 
 Require the HttpOnly local-library session established by an origin-checked POST.
 
-Source: [backend/app/library.py:82](../backend/app/library.py).
+Source: [backend/app/library.py:96](../backend/app/library.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 
@@ -426,7 +439,7 @@ Source: [backend/app/library.py:82](../backend/app/library.py).
 
 Resolve only UUID child directories inside an allowlisted library collection.
 
-Source: [backend/app/library.py:88](../backend/app/library.py).
+Source: [backend/app/library.py:102](../backend/app/library.py).
 
 - `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
@@ -441,7 +454,7 @@ Source: [backend/app/library.py:88](../backend/app/library.py).
 
 Publish one copied media file atomically without reading its entire contents into memory.
 
-Source: [backend/app/library.py:107](../backend/app/library.py).
+Source: [backend/app/library.py:121](../backend/app/library.py).
 
 - `source`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
 - `target`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -454,7 +467,7 @@ Source: [backend/app/library.py:107](../backend/app/library.py).
 
 Save metadata and changed media; never serialize job tokens, thread events or subprocesses.
 
-Source: [backend/app/library.py:121](../backend/app/library.py).
+Source: [backend/app/library.py:135](../backend/app/library.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -464,8 +477,8 @@ Source: [backend/app/library.py:121](../backend/app/library.py).
 | `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `job.cues` |
 | `identifier` | Allowlisted UUID key for a durable project/template, never an arbitrary path. | `job.project_id or uuid.uuid4().hex` |
 | `job.project_id` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `identifier` |
+| `existing` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT snapshot,deleted_at FROM projects WHERE id=?', (identifier,)).fetchone()` |
 | `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `directory('projects', identifier)` |
-| `existing` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT snapshot FROM projects WHERE id=?', (identifier,)).fetchone()` |
 | `previous` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads(existing['snapshot']) if existing else {}` |
 | `fingerprints` | Size/mtime pairs used to avoid recopying unchanged media after each settings save. | `previous.get('files', {})` |
 | `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `FILES` |
@@ -478,30 +491,30 @@ Source: [backend/app/library.py:121](../backend/app/library.py).
 
 List durable project summaries without secrets or local filesystem paths.
 
-Source: [backend/app/library.py:180](../backend/app/library.py).
+Source: [backend/app/library.py:196](../backend/app/library.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
-| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT id,title,created,updated,state,(draft IS NOT NULL) AS has_draft FROM projects ORDER BY updated DESC')` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT id,COALESCE(display_name,title) AS title,created,updated,state,(draft IS NOT NULL OR subtitle_draft IS NOT NULL) AS has_draft FROM projects WHERE deleted_at IS NULL ORDER BY` |
 
 ### `project(identifier)`
 
 Read a known project record before resolving any media paths.
 
-Source: [backend/app/library.py:191](../backend/app/library.py).
+Source: [backend/app/library.py:207](../backend/app/library.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
-| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT * FROM projects WHERE id=?', (identifier,)).fetchone()` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT * FROM projects WHERE id=? AND deleted_at IS NULL', (identifier,)).fetchone()` |
 
 ### `save_draft(identifier, design, base)`
 
 Persist a validated draft without silently approving it or modifying an active render.
 
-Source: [backend/app/library.py:200](../backend/app/library.py).
+Source: [backend/app/library.py:218](../backend/app/library.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `design`: Validated episode appearance/encoding settings or unsaved browser draft.
@@ -515,7 +528,7 @@ Source: [backend/app/library.py:200](../backend/app/library.py).
 
 Create a fresh temporary job/token from durable files; interrupted operations never auto-restart.
 
-Source: [backend/app/library.py:213](../backend/app/library.py).
+Source: [backend/app/library.py:231](../backend/app/library.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `store`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -535,6 +548,7 @@ Source: [backend/app/library.py:213](../backend/app/library.py).
 | `job` | Temporary episode with metadata, files, approvals and cancellation resources. | `make_job(jid, target, saved['metadata'], cues, saved['warnings'])` |
 | `job.design` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Design.model_validate_json(row['draft']) if row['draft'] else Design.model_validate(saved['config'])` |
 | `job.project_id` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `None if duplicate else identifier` |
+| `job.subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `bool(row['subtitle_draft'])` |
 | `job.artifacts` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `set(saved['artifacts'])` |
 | `job.background_mode` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `saved['background_mode']` |
 | `job.approved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `saved['background_approved']` |
@@ -549,7 +563,7 @@ Source: [backend/app/library.py:213](../backend/app/library.py).
 
 Save brand settings plus reusable background/logo, without copying source audio or subtitles.
 
-Source: [backend/app/library.py:271](../backend/app/library.py).
+Source: [backend/app/library.py:296](../backend/app/library.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 - `title`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -565,18 +579,18 @@ Source: [backend/app/library.py:271](../backend/app/library.py).
 
 List brand presets without returning their media paths.
 
-Source: [backend/app/library.py:288](../backend/app/library.py).
+Source: [backend/app/library.py:313](../backend/app/library.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
-| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT id,title,updated FROM templates ORDER BY updated DESC')` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT id,title,updated FROM templates WHERE deleted_at IS NULL ORDER BY updated DESC')` |
 
 ### `apply_template(job, identifier, store)`
 
 Reuse a brand template, retaining this episode's title and transcription content.
 
-Source: [backend/app/library.py:297](../backend/app/library.py).
+Source: [backend/app/library.py:324](../backend/app/library.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
@@ -584,7 +598,7 @@ Source: [backend/app/library.py:297](../backend/app/library.py).
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
-| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT * FROM templates WHERE id=?', (identifier,)).fetchone()` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute('SELECT * FROM templates WHERE id=? AND deleted_at IS NULL', (identifier,)).fetchone()` |
 | `design` | Validated episode appearance/encoding settings or unsaved browser draft. | `Design.model_validate_json(row['design'])` |
 | `design.title` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(job.design.title, job.design.description)` |
 | `design.description` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(job.design.title, job.design.description)` |
@@ -601,9 +615,418 @@ Source: [backend/app/library.py:297](../backend/app/library.py).
 
 Remove a recovery draft only after its configuration was explicitly saved.
 
-Source: [backend/app/library.py:325](../backend/app/library.py).
+Source: [backend/app/library.py:354](../backend/app/library.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+### `location(kind, identifier, trashed=False)`
+
+Read a managed UUID location without creating missing project/template directories.
+
+Source: [backend/app/library.py:360](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `trashed`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `identifier` |
+| `base` | Last saved Design version used to reject obsolete in-flight autosave requests. | `root()` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `base / ('trash' if trashed else '') / kind / identifier` |
+| `path` | Controlled filesystem location, never an uploaded filename. | `(target, target.parent, target.parent.parent)` |
+
+### `item_bytes(kind, identifier, trashed=False)`
+
+Count actual local media bytes, including obsolete outputs retained in that item folder.
+
+Source: [backend/app/library.py:378](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `trashed`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `item` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `path.iterdir()` |
+| `path` | Controlled filesystem location, never an uploaded filename. | `location(kind, identifier, trashed)` |
+
+### `rename(kind, identifier, title)`
+
+Rename a library label independently of the video's title and saved appearance.
+
+Source: [backend/app/library.py:388](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `title`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `column` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'display_name' if kind == 'projects' else 'title'` |
+| `result` | Result of the operation/parser/API named by its assignment. | `connection.execute(f'UPDATE {kind} SET {column}=?,updated=? WHERE id=? AND deleted_at IS NULL', (title.strip(), time.time(), identifier))` |
+
+### `trash_item(kind, identifier)`
+
+Move a saved item into recoverable Trash; roll the move back if metadata cannot commit.
+
+Source: [backend/app/library.py:402](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'SELECT * FROM {kind} WHERE id=? AND deleted_at IS NULL', (identifier,)).fetchone() if kind in ('projects', 'templates') else None` |
+| `source` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `location(kind, identifier)` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `location(kind, identifier, True)` |
+
+### `trash_items()`
+
+List recoverable items with their space usage; no credentials or disk paths are returned.
+
+Source: [backend/app/library.py:428](../backend/app/library.py).
+
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `result` | Result of the operation/parser/API named by its assignment. | `[]` |
+| `kind` | Allowlisted operation/artifact key, not an arbitrary filename. | `('projects', 'templates')` |
+| `title` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'COALESCE(display_name,title)' if kind == 'projects' else 'title'` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'SELECT id,{title} AS title,deleted_at FROM {kind} WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC')` |
+
+### `restore_trash(kind, identifier)`
+
+Restore a Trash item to its original identity, preserving its drafts and saved settings.
+
+Source: [backend/app/library.py:448](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'SELECT id FROM {kind} WHERE id=? AND deleted_at IS NOT NULL', (identifier,)).fetchone()` |
+| `source` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `location(kind, identifier, True)` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `location(kind, identifier)` |
+
+### `purge_trash(kind, identifier, confirmation)`
+
+Permanently remove only a named, already-trashed UUID item after explicit user confirmation.
+
+Source: [backend/app/library.py:472](../backend/app/library.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `confirmation`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `expression` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'COALESCE(display_name,title)' if kind == 'projects' else 'title'` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'SELECT {expression} AS title FROM {kind} WHERE id=? AND deleted_at IS NOT NULL', (identifier,)).fetchone()` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `location(kind, identifier, True)` |
+
+### `usage()`
+
+Report active and Trash bytes separately so deletion does not falsely promise freed space.
+
+Source: [backend/app/library.py:491](../backend/app/library.py).
+
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `item` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `projects()` |
+| `projects_size` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `sum((item['bytes'] for item in projects()))` |
+| `templates_size` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `sum((item['bytes'] for item in templates()))` |
+| `trash_size` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `sum((item['bytes'] for item in trash_items()))` |
+| `path` | Controlled filesystem location, never an uploaded filename. | `root() / 'library.sqlite3'` |
+| `database_size` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `path.stat().st_size if path.exists() else 0` |
+
+### `srt_digest(text)`
+
+Hash normalized UTF-8 subtitle text for optimistic edit/autosave conflict detection.
+
+Source: [backend/app/library.py:509](../backend/app/library.py).
+
+- `text`: Subtitle/title text; escape before ASS insertion and never translate user content.
+
+### `caption_state(job)`
+
+Read original caption text plus its recovery draft without applying unapproved corrections.
+
+Source: [backend/app/library.py:514](../backend/app/library.py).
+
+- `job`: Temporary episode with metadata, files, approvals and cancellation resources.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'generated.srt' if job.subtitle_source == 'generate' else 'original.srt'` |
+| `text` | Subtitle/title text; escape before ASS insertion and never translate user content. | `(job.path / name).read_text(encoding='utf-8-sig')` |
+| `result` | Result of the operation/parser/API named by its assignment. | `{'srt': text, 'base_digest': srt_digest(text), 'base_version': 0, 'draft': None, 'draft_conflict': False}` |
+| `record` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `project(job.project_id)` |
+| `exc` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `caught exception` |
+| `draft` | Recoverable appearance edits kept separate from explicitly saved render configuration. | `json.loads(record['subtitle_draft'])` |
+
+### `save_caption_draft(identifier, srt, base_digest, base_version)`
+
+Keep even incomplete SRT text, while rejecting obsolete saves from another edit generation.
+
+Source: [backend/app/library.py:543](../backend/app/library.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `srt`: SRT under review; editing intentionally discards word alignment.
+- `base_digest`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `base_version`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `project(identifier)` |
+| `snapshot` | Portable project metadata and media fingerprints, excluding secret tokens/process state. | `json.loads(row['snapshot'])` |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'generated.srt' if snapshot['subtitle_source'] == 'generate' else 'original.srt'` |
+| `original` | Last saved SRT text for dirty-state comparison. | `(location('projects', identifier) / name).read_text(encoding='utf-8-sig')` |
+| `draft` | Recoverable appearance edits kept separate from explicitly saved render configuration. | `json.dumps({'srt': srt, 'base_digest': base_digest, 'base_version': base_version})` |
+
+### `clear_caption_draft(identifier)`
+
+Advance the caption edit generation so late requests cannot resurrect saved/discarded drafts.
+
+Source: [backend/app/library.py:561](../backend/app/library.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+## backend/app/library_routes.py
+
+Local-library administration, portable packages and review-before-restore endpoints.
+
+### `attach(app, get_job, editable)`
+
+Register routes before the static frontend mount, reusing the existing job security boundary.
+
+Source: [backend/app/library_routes.py:14](../backend/app/library_routes.py).
+
+- `app`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `get_job`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `editable`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `router` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `APIRouter(prefix='/api', dependencies=[Depends(authorized)])` |
+
+### `attach.authorized(request: Request)`
+
+Require the same-origin local-library cookie on every administration/transfer route.
+
+Source: [backend/app/library_routes.py:17](../backend/app/library_routes.py).
+
+- `request`: HTTP request containing headers and a streamed body.
+
+### `attach.usage()`
+
+Report local storage and package budgets without returning filesystem paths.
+
+Source: [backend/app/library_routes.py:24](../backend/app/library_routes.py).
+
+
+### `attach.trash()`
+
+List recoverable project/template records and the space they still occupy.
+
+Source: [backend/app/library_routes.py:33](../backend/app/library_routes.py).
+
+
+### `attach.rename(kind: str, identifier: str, body: ItemName)`
+
+Change a library label, retaining the video's original title.
+
+Source: [backend/app/library_routes.py:38](../backend/app/library_routes.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+### `attach.move_to_trash(kind: str, identifier: str)`
+
+Checkpoint and close idle workspaces before the explicitly requested recoverable move.
+
+Source: [backend/app/library_routes.py:46](../backend/app/library_routes.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `job` | Temporary episode with metadata, files, approvals and cancellation resources. | `store.jobs.values()` |
+| `affected` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[job for job in store.jobs.values() if job.project_id == identifier] if kind == 'projects' else []` |
+
+### `attach.restore(kind: str, identifier: str)`
+
+Recover an item from Trash without duplicating its identity or dropping its drafts.
+
+Source: [backend/app/library_routes.py:67](../backend/app/library_routes.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+### `attach.purge(kind: str, identifier: str, body: PurgeConfirmation)`
+
+Permanently delete only after the UI supplies the item's exact confirmation name.
+
+Source: [backend/app/library_routes.py:73](../backend/app/library_routes.py).
+
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+### `attach.caption_draft(identifier: str, body: SubtitleDraftRequest)`
+
+Persist incomplete subtitle edits without mutating saved cues or approving a render.
+
+Source: [backend/app/library_routes.py:79](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `saved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `library.save_caption_draft(identifier, body.srt, body.base_digest, body.base_version)` |
+| `job` | Temporary episode with metadata, files, approvals and cancellation resources. | `store.jobs.values()` |
+| `job.subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `True` |
+
+### `attach.discard_caption_draft(identifier: str)`
+
+Advance the generation when the user explicitly discards subtitle corrections.
+
+Source: [backend/app/library_routes.py:91](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `job` | Temporary episode with metadata, files, approvals and cancellation resources. | `store.jobs.values()` |
+| `job.subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `False` |
+
+### `attach.prepare(request, scope, identifier=None)`
+
+Freeze saved state, build a bounded disk-backed package, then return a single-use download.
+
+Source: [backend/app/library_routes.py:101](../backend/app/library_routes.py).
+
+- `request`: HTTP request containing headers and a streamed body.
+- `scope`: ASGI context with path, headers and protocol metadata.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `manager.begin('export')` |
+| `job` | Temporary episode with metadata, files, approvals and cancellation resources. | `store.jobs.values()` |
+| `output` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await asyncio.to_thread(packages.build, entry['path'], scope, identifier)` |
+| `filename` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `f"easypodcast-{scope}-{entry['id'][:8]}.zip"` |
+
+### `attach.export_project(identifier: str, request: Request)`
+
+Export inputs, media, completed outputs, appearance and subtitle recovery drafts.
+
+Source: [backend/app/library_routes.py:129](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `request`: HTTP request containing headers and a streamed body.
+
+### `attach.backup(request: Request)`
+
+Back up projects/templates including Trash, without the machine-local capability or database file.
+
+Source: [backend/app/library_routes.py:134](../backend/app/library_routes.py).
+
+- `request`: HTTP request containing headers and a streamed body.
+
+### `attach.download(identifier: str, request: Request)`
+
+Stream a built ZIP and clean its private staged files even after client disconnection.
+
+Source: [backend/app/library_routes.py:139](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `request`: HTTP request containing headers and a streamed body.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
+| `lease` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `manager.lease(identifier, 'export')` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `lease.__enter__()` |
+
+### `attach.download.Download(FileResponse)`
+
+Hold the transfer lease for the entire response lifetime.
+
+Source: [backend/app/library_routes.py:145](../backend/app/library_routes.py).
+
+### `attach.download.Download.__call__(self, scope, receive, send)`
+
+Release resources on normal completion, range completion or disconnect.
+
+Source: [backend/app/library_routes.py:148](../backend/app/library_routes.py).
+
+- `self`: The current Python class instance.
+- `scope`: ASGI context with path, headers and protocol metadata.
+- `receive`: ASGI callable reading incoming body events.
+- `send`: ASGI callable sending outgoing response events.
+
+### `attach.cancel_export(identifier: str, request: Request)`
+
+Release an unused prepared download without retaining an inaccessible transfer slot.
+
+Source: [backend/app/library_routes.py:164](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `request`: HTTP request containing headers and a streamed body.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
+
+### `attach.preview_import(request: Request)`
+
+Stream a ZIP to a bounded workspace and return a validated review before installation.
+
+Source: [backend/app/library_routes.py:173](../backend/app/library_routes.py).
+
+- `request`: HTTP request containing headers and a streamed body.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `manager.begin('import')` |
+| `size` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `0` |
+| `block` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.stream()` |
+| `report` | Preflight readiness, blockers and warnings measured from actual selected fonts. | `await asyncio.to_thread(packages.inspect_package, entry['path'])` |
+
+### `attach.confirm(identifier: str, request: Request)`
+
+Install only a previously verified review ticket as independent new copies.
+
+Source: [backend/app/library_routes.py:202](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `request`: HTTP request containing headers and a streamed body.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
+| `result` | Result of the operation/parser/API named by its assignment. | `await asyncio.to_thread(packages.install, entry['path'])` |
+
+### `attach.cancel_import(identifier: str, request: Request)`
+
+Cancel an unconfirmed import without changing any durable project.
+
+Source: [backend/app/library_routes.py:212](../backend/app/library_routes.py).
+
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `request`: HTTP request containing headers and a streamed body.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manager` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.app.state.transfers` |
 
 ## backend/app/main.py
 
@@ -611,33 +1034,36 @@ FastAPI endpoints, local request guards and authenticated artifact responses.
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
-| `app` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `FastAPI(title='EasyPodcast', version='0.5.0', lifespan=lifespan)` |
+| `app` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `FastAPI(title='EasyPodcast', version='0.6.0', lifespan=lifespan)` |
 | `frontend` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ROOT / 'frontend' / 'dist'` |
 
 ### `lifespan(app)`
 
 Start the store and compute capabilities at startup; close resources during shutdown.
 
-Source: [backend/app/main.py:25](../backend/app/main.py).
+Source: [backend/app/main.py:28](../backend/app/main.py).
 
 - `app`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
 | `app.state.upload_slot` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `asyncio.Semaphore(1)` |
+| `app.state.bundle_slot` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `asyncio.Semaphore(1)` |
+| `app.state.transfers` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `TransferManager(store.root)` |
+| `store.transfer_cleanup` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `app.state.transfers.clean` |
 | `app.state.capabilities` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await asyncio.to_thread(capabilities)` |
 
 ### `RequestGuard()`
 
 Enforce allowed browser origins and a total request-body byte budget.
 
-Source: [backend/app/main.py:38](../backend/app/main.py).
+Source: [backend/app/main.py:45](../backend/app/main.py).
 
 ### `RequestGuard.__init__(self, app)`
 
 Initialize the instance resources; background threads are started separately.
 
-Source: [backend/app/main.py:41](../backend/app/main.py).
+Source: [backend/app/main.py:48](../backend/app/main.py).
 
 - `self`: The current Python class instance.
 - `app`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -650,7 +1076,7 @@ Source: [backend/app/main.py:41](../backend/app/main.py).
 
 Handle an ASGI request while preserving middleware or response cleanup guarantees.
 
-Source: [backend/app/main.py:45](../backend/app/main.py).
+Source: [backend/app/main.py:52](../backend/app/main.py).
 
 - `self`: The current Python class instance.
 - `scope`: ASGI context with path, headers and protocol metadata.
@@ -669,7 +1095,7 @@ Source: [backend/app/main.py:45](../backend/app/main.py).
 
 Count streamed ASGI body bytes and enforce the total upload budget.
 
-Source: [backend/app/main.py:59](../backend/app/main.py).
+Source: [backend/app/main.py:69](../backend/app/main.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
@@ -681,7 +1107,16 @@ Source: [backend/app/main.py:59](../backend/app/main.py).
 
 Convert a validation ValueError into a safe HTTP 422 response.
 
-Source: [backend/app/main.py:75](../backend/app/main.py).
+Source: [backend/app/main.py:85](../backend/app/main.py).
+
+- `request`: HTTP request containing headers and a streamed body.
+- `exc`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+### `storage_failure(request, exc)`
+
+Report local storage failures without returning private paths or raw OS/SQLite errors.
+
+Source: [backend/app/main.py:92](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 - `exc`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -690,14 +1125,14 @@ Source: [backend/app/main.py:75](../backend/app/main.py).
 
 Expose service liveness and version without secrets.
 
-Source: [backend/app/main.py:81](../backend/app/main.py).
+Source: [backend/app/main.py:100](../backend/app/main.py).
 
 
 ### `get_capabilities(request: Request)`
 
 Return dependency and limit checks computed at application startup.
 
-Source: [backend/app/main.py:87](../backend/app/main.py).
+Source: [backend/app/main.py:106](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 
@@ -705,7 +1140,7 @@ Source: [backend/app/main.py:87](../backend/app/main.py).
 
 Authenticate the job token and reject absent, expired or invalid sessions.
 
-Source: [backend/app/main.py:92](../backend/app/main.py).
+Source: [backend/app/main.py:111](../backend/app/main.py).
 
 - `jid`: Random public job ID; a separate secret token is required.
 - `request`: HTTP request containing headers and a streamed body.
@@ -719,7 +1154,7 @@ Source: [backend/app/main.py:92](../backend/app/main.py).
 
 Reject edits while an operation or artifact download holds the job.
 
-Source: [backend/app/main.py:112](../backend/app/main.py).
+Source: [backend/app/main.py:131](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -727,7 +1162,7 @@ Source: [backend/app/main.py:112](../backend/app/main.py).
 
 Serialize uploads and dispatch creation for the selected subtitle source.
 
-Source: [backend/app/main.py:139](../backend/app/main.py).
+Source: [backend/app/main.py:158](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 - `subtitle_mode`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -742,7 +1177,7 @@ Source: [backend/app/main.py:139](../backend/app/main.py).
 
 Receive and validate uploads, create an episode and optionally queue local transcription.
 
-Source: [backend/app/main.py:154](../backend/app/main.py).
+Source: [backend/app/main.py:173](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 - `subtitle_mode`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -769,7 +1204,7 @@ Source: [backend/app/main.py:154](../backend/app/main.py).
 
 Return a job snapshot and refresh the media cookie only to its existing expiry.
 
-Source: [backend/app/main.py:231](../backend/app/main.py).
+Source: [backend/app/main.py:250](../backend/app/main.py).
 
 - `response`: Outgoing HTTP response or inspected fetch result.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -782,7 +1217,7 @@ Source: [backend/app/main.py:231](../backend/app/main.py).
 
 Replace validated Design settings and invalidate previous approvals/artifacts.
 
-Source: [backend/app/main.py:248](../backend/app/main.py).
+Source: [backend/app/main.py:267](../backend/app/main.py).
 
 - `design`: Validated episode appearance/encoding settings or unsaved browser draft.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -795,7 +1230,7 @@ Source: [backend/app/main.py:248](../backend/app/main.py).
 
 Queue explicit optional provider generation for the current job.
 
-Source: [backend/app/main.py:261](../backend/app/main.py).
+Source: [backend/app/main.py:280](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -803,7 +1238,7 @@ Source: [backend/app/main.py:261](../backend/app/main.py).
 
 Mark the current background reviewed without generating or rendering anything.
 
-Source: [backend/app/main.py:270](../backend/app/main.py).
+Source: [backend/app/main.py:289](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -815,7 +1250,7 @@ Source: [backend/app/main.py:270](../backend/app/main.py).
 
 Mark the current preview reviewed after checking that it exists.
 
-Source: [backend/app/main.py:280](../backend/app/main.py).
+Source: [backend/app/main.py:299](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -825,9 +1260,9 @@ Source: [backend/app/main.py:280](../backend/app/main.py).
 
 ### `check_render(job)`
 
-Enforce dependencies, subtitle/background approval, trim permission and disk budget.
+Enforce dependencies, pending caption recovery, approvals and disk budgets.
 
-Source: [backend/app/main.py:291](../backend/app/main.py).
+Source: [backend/app/main.py:310](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -841,7 +1276,7 @@ Source: [backend/app/main.py:291](../backend/app/main.py).
 
 Queue up to 20 seconds from the validated starting offset.
 
-Source: [backend/app/main.py:313](../backend/app/main.py).
+Source: [backend/app/main.py:334](../backend/app/main.py).
 
 - `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -850,7 +1285,7 @@ Source: [backend/app/main.py:313](../backend/app/main.py).
 
 Queue full-episode export only after the current preview has been approved.
 
-Source: [backend/app/main.py:325](../backend/app/main.py).
+Source: [backend/app/main.py:346](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -858,7 +1293,7 @@ Source: [backend/app/main.py:325](../backend/app/main.py).
 
 Signal cancellation and expose a cancelling phase without blocking the API.
 
-Source: [backend/app/main.py:337](../backend/app/main.py).
+Source: [backend/app/main.py:358](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -871,7 +1306,7 @@ Source: [backend/app/main.py:337](../backend/app/main.py).
 
 Request cancellation and deferred deletion of this managed episode.
 
-Source: [backend/app/main.py:347](../backend/app/main.py).
+Source: [backend/app/main.py:368](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -883,7 +1318,7 @@ Source: [backend/app/main.py:347](../backend/app/main.py).
 
 Serve an allowlisted artifact, holding a reader lease for media streaming.
 
-Source: [backend/app/main.py:361](../backend/app/main.py).
+Source: [backend/app/main.py:382](../backend/app/main.py).
 
 - `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
 - `download`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -900,7 +1335,7 @@ Source: [backend/app/main.py:361](../backend/app/main.py).
 
 Release one download reader and retry deferred cleanup.
 
-Source: [backend/app/main.py:395](../backend/app/main.py).
+Source: [backend/app/main.py:416](../backend/app/main.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
@@ -911,13 +1346,13 @@ Source: [backend/app/main.py:395](../backend/app/main.py).
 
 Release a download reader lease even when response streaming fails or disconnects.
 
-Source: [backend/app/main.py:401](../backend/app/main.py).
+Source: [backend/app/main.py:422](../backend/app/main.py).
 
 ### `artifact.LeasedFileResponse.__call__(self, scope, receive, send)`
 
 Handle an ASGI request while preserving middleware or response cleanup guarantees.
 
-Source: [backend/app/main.py:404](../backend/app/main.py).
+Source: [backend/app/main.py:425](../backend/app/main.py).
 
 - `self`: The current Python class instance.
 - `scope`: ASGI context with path, headers and protocol metadata.
@@ -928,7 +1363,7 @@ Source: [backend/app/main.py:404](../backend/app/main.py).
 
 Queue transcription again only for episodes created in generate mode.
 
-Source: [backend/app/main.py:420](../backend/app/main.py).
+Source: [backend/app/main.py:441](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -936,20 +1371,20 @@ Source: [backend/app/main.py:420](../backend/app/main.py).
 
 Read the reviewable SRT and expose whether word timestamps exist.
 
-Source: [backend/app/main.py:429](../backend/app/main.py).
+Source: [backend/app/main.py:450](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
 | `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `job.cues` |
-| `path` | Controlled filesystem location, never an uploaded filename. | `job.path / ('generated.srt' if job.subtitle_source == 'generate' else 'original.srt')` |
+| `state` | Lifecycle enum, independent of interface language. | `library.caption_state(job)` |
 
 ### `edit_subtitles(body: SubtitleEdit, job=Depends(get_job))`
 
 Validate edited SRT, drop stale word timing and invalidate previous renders.
 
-Source: [backend/app/main.py:445](../backend/app/main.py).
+Source: [backend/app/main.py:466](../backend/app/main.py).
 
 - `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
@@ -959,6 +1394,9 @@ Source: [backend/app/main.py:445](../backend/app/main.py).
 | `cues` | Ordered subtitle intervals with optional estimated word timing. | `parse_srt(body.srt.encode())` |
 | `warnings` | Nonfatal review messages such as overlap or estimated timing. | `parse_srt(body.srt.encode())` |
 | `path` | Controlled filesystem location, never an uploaded filename. | `job.path / ('generated.srt' if job.subtitle_source == 'generate' else 'original.srt')` |
+| `state` | Lifecycle enum, independent of interface language. | `library.caption_state(job)` |
+| `job.subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `False` |
+| `partial` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `path.with_suffix('.srt.partial')` |
 | `job.cues` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `cues` |
 | `job.warnings` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `warnings + ['SRT editado: se desactiva resaltado por palabra para no usar tiempos desactualizados.']` |
 | `job.subtitles_approved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `False` |
@@ -967,7 +1405,7 @@ Source: [backend/app/main.py:445](../backend/app/main.py).
 
 Approve generated or edited cues so the user can proceed to design.
 
-Source: [backend/app/main.py:468](../backend/app/main.py).
+Source: [backend/app/main.py:506](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -979,7 +1417,7 @@ Source: [backend/app/main.py:468](../backend/app/main.py).
 
 Serve an allowlisted bundled font and reject arbitrary path requests.
 
-Source: [backend/app/main.py:480](../backend/app/main.py).
+Source: [backend/app/main.py:520](../backend/app/main.py).
 
 - `key`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
 - `bold`: Whether to select the actual Bold font/style.
@@ -988,7 +1426,7 @@ Source: [backend/app/main.py:480](../backend/app/main.py).
 
 Establish a same-origin HttpOnly local-library capability without exposing it to JavaScript.
 
-Source: [backend/app/main.py:492](../backend/app/main.py).
+Source: [backend/app/main.py:532](../backend/app/main.py).
 
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
@@ -999,7 +1437,7 @@ Source: [backend/app/main.py:492](../backend/app/main.py).
 
 List durable local projects after local-library authorization.
 
-Source: [backend/app/main.py:502](../backend/app/main.py).
+Source: [backend/app/main.py:542](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 
@@ -1014,7 +1452,7 @@ Source: [backend/app/main.py:502](../backend/app/main.py).
 
 Serve a bounded project cover image through the library session.
 
-Source: [backend/app/main.py:518](../backend/app/main.py).
+Source: [backend/app/main.py:558](../backend/app/main.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `request`: HTTP request containing headers and a streamed body.
@@ -1023,7 +1461,7 @@ Source: [backend/app/main.py:518](../backend/app/main.py).
 
 Recover or duplicate a durable project into a fresh token-protected workspace.
 
-Source: [backend/app/main.py:529](../backend/app/main.py).
+Source: [backend/app/main.py:569](../backend/app/main.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `request`: HTTP request containing headers and a streamed body.
@@ -1034,6 +1472,7 @@ Source: [backend/app/main.py:529](../backend/app/main.py).
 | `duplicate` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `request.url.path.endswith('duplicate')` |
 | `existing` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `next((item for item in store.jobs.values() if item.project_id == identifier and (not item.deleting)), None)` |
 | `record` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `library.project(identifier)` |
+| `existing.subtitle_draft_available` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `bool(record['subtitle_draft'])` |
 | `recovered` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Design.model_validate_json(record['draft'])` |
 | `existing.design` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `recovered` |
 | `existing.expires` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `time.time() + settings.ttl_seconds` |
@@ -1046,7 +1485,7 @@ Source: [backend/app/main.py:529](../backend/app/main.py).
 
 Autosave validated appearance settings without granting render approval.
 
-Source: [backend/app/main.py:581](../backend/app/main.py).
+Source: [backend/app/main.py:622](../backend/app/main.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -1060,7 +1499,7 @@ Source: [backend/app/main.py:581](../backend/app/main.py).
 
 List reusable brand settings and media stored locally.
 
-Source: [backend/app/main.py:589](../backend/app/main.py).
+Source: [backend/app/main.py:630](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 
@@ -1068,7 +1507,7 @@ Source: [backend/app/main.py:589](../backend/app/main.py).
 
 Save the current brand appearance plus background/logo, without audio or captions.
 
-Source: [backend/app/main.py:596](../backend/app/main.py).
+Source: [backend/app/main.py:637](../backend/app/main.py).
 
 - `request`: HTTP request containing headers and a streamed body.
 - `body`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
@@ -1078,7 +1517,7 @@ Source: [backend/app/main.py:596](../backend/app/main.py).
 
 Apply a saved brand while retaining this episode's title and spoken content.
 
-Source: [backend/app/main.py:605](../backend/app/main.py).
+Source: [backend/app/main.py:646](../backend/app/main.py).
 
 - `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
 - `request`: HTTP request containing headers and a streamed body.
@@ -1088,7 +1527,7 @@ Source: [backend/app/main.py:605](../backend/app/main.py).
 
 Check layout/text with real font measurement without starting a render.
 
-Source: [backend/app/main.py:615](../backend/app/main.py).
+Source: [backend/app/main.py:656](../backend/app/main.py).
 
 - `job`: Temporary episode with metadata, files, approvals and cancellation resources.
 
@@ -1357,12 +1796,14 @@ Source: [backend/app/models.py:126](../backend/app/models.py).
 | --- | --- | --- |
 | `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ConfigDict(extra='forbid')` |
 | `srt` | SRT under review; editing intentionally discards word alignment. | `Field(min_length=1, max_length=5 * 1024 ** 2)` |
+| `base_digest` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(None, pattern='^[0-9a-f]{64}$')` |
+| `base_version` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(None, ge=0)` |
 
 ### `DraftRequest(BaseModel)`
 
 Version a recovery draft against the last saved design to reject stale in-flight autosaves.
 
-Source: [backend/app/models.py:134](../backend/app/models.py).
+Source: [backend/app/models.py:136](../backend/app/models.py).
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
@@ -1374,12 +1815,220 @@ Source: [backend/app/models.py:134](../backend/app/models.py).
 
 Optional human-readable brand name; never used as a directory or filename.
 
-Source: [backend/app/models.py:142](../backend/app/models.py).
+Source: [backend/app/models.py:144](../backend/app/models.py).
 
 | Variable / attribute | Explanation | Initializer / assignment excerpt |
 | --- | --- | --- |
 | `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ConfigDict(extra='forbid')` |
 | `title` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(min_length=1, max_length=120)` |
+
+### `SubtitleDraftRequest(BaseModel)`
+
+Keep incomplete subtitle edits as recoverable text, versioned against saved captions.
+
+Source: [backend/app/models.py:151](../backend/app/models.py).
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ConfigDict(extra='forbid')` |
+| `srt` | SRT under review; editing intentionally discards word alignment. | `Field(max_length=5 * 1024 ** 2)` |
+| `base_digest` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(pattern='^[0-9a-f]{64}$')` |
+| `base_version` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(ge=0)` |
+
+### `ItemName(BaseModel)`
+
+User-visible library name, never interpreted as a path.
+
+Source: [backend/app/models.py:160](../backend/app/models.py).
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ConfigDict(extra='forbid')` |
+| `title` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(min_length=1, max_length=120)` |
+
+### `PurgeConfirmation(BaseModel)`
+
+Require the item's exact name before permanent removal from Trash.
+
+Source: [backend/app/models.py:167](../backend/app/models.py).
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `model_config` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `ConfigDict(extra='forbid')` |
+| `confirmation` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Field(max_length=120)` |
+
+## backend/app/packages.py
+
+Portable, checksummed ZIP packages without database credentials or unsafe extraction paths.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `MAX_MANIFEST` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `64 * 1024 ** 2` |
+| `MAX_MEMBERS` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `10000` |
+| `TEMPLATE_FILES` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'background.png', 'background-source.png', 'logo.png'}` |
+
+### `digest(path)`
+
+Hash a file in fixed-size chunks so large audio/video never becomes an in-memory Blob.
+
+Source: [backend/app/packages.py:29](../backend/app/packages.py).
+
+- `path`: Controlled filesystem location, never an uploaded filename.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `value` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `hashlib.sha256()` |
+| `block` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `iter(lambda: source.read(1024 ** 2), b'')` |
+
+### `records(scope, identifier=None)`
+
+Snapshot records under the library lock; private owner keys and SQLite files are excluded.
+
+Source: [backend/app/packages.py:38](../backend/app/packages.py).
+
+- `scope`: ASGI context with path, headers and protocol metadata.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `kind` | Allowlisted operation/artifact key, not an arbitrary filename. | `('projects', 'templates')` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `connection.execute(f'SELECT * FROM {kind}')` |
+
+### `build(stage, scope, identifier=None)`
+
+Freeze media versions using hard links when possible, then build a ZIP64 package on disk.
+
+Source: [backend/app/packages.py:52](../backend/app/packages.py).
+
+- `stage`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `scope`: ASGI context with path, headers and protocol metadata.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `manifest` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'format': 'easypodcast-portable', 'version': 1, 'scope': scope, 'created': time.time(), 'items': []}` |
+| `frozen` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `stage / 'frozen'` |
+| `rows` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `records(scope, identifier)` |
+| `file_count` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `1` |
+| `kind` | Allowlisted operation/artifact key, not an arbitrary filename. | `rows` |
+| `row` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `rows` |
+| `record` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `copy.deepcopy(row)` |
+| `saved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads(record['snapshot']) if kind == 'projects' else None` |
+| `names` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `set(saved['files']) if saved else TEMPLATE_FILES` |
+| `folder` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `library.location(kind, record['id'], record.get('deleted_at') is not None)` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'kind': kind, 'record': record, 'files': {}}` |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `sorted(names)` |
+| `source` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `folder / name` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `frozen / kind / record['id'] / name` |
+| `total` | Accumulated incoming body bytes. | `0` |
+| `output` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `stage / 'package.easypodcast.zip'` |
+| `meta` | Inspected audio metadata including duration and selected stream. | `entry['files'].items()` |
+| `raw` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.dumps(manifest, ensure_ascii=False).encode('utf-8')` |
+
+### `validate_project(record, folder, names)`
+
+Validate imported settings/media and rebuild trustworthy audio metadata before installation.
+
+Source: [backend/app/packages.py:118](../backend/app/packages.py).
+
+- `record`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `folder`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+- `names`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `serialized` |
+| `item` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `media.get('streams', [])` |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `names` |
+| `saved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads(record['snapshot'])` |
+| `design` | Validated episode appearance/encoding settings or unsaved browser draft. | `Design.model_validate(saved['config'])` |
+| `source` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `saved.get('subtitle_source')` |
+| `srt_name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'generated.srt' if source == 'generate' else 'original.srt'` |
+| `parsed` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `parse_srt((folder / srt_name).read_bytes())` |
+| `warnings` | Nonfatal review messages such as overlap or estimated timing. | `parse_srt((folder / srt_name).read_bytes())` |
+| `serialized` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `saved.get('cues', [])` |
+| `cues` | Ordered subtitle intervals with optional estimated word timing. | `[]` |
+| `word_count` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `0` |
+| `index` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `enumerate(parsed)` |
+| `cue` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `enumerate(parsed)` |
+| `original` | Last saved SRT text for dirty-state comparison. | `serialized[index] if serialized else {}` |
+| `words` | Validated recognized word intervals used for grouping/highlighting. | `[]` |
+| `word` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Word.model_validate(item)` |
+| `key` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `('background_approved', 'preview_approved', 'subtitles_approved')` |
+| `artifacts` | Available output kinds; stale renders are discarded after edits. | `{'background'}` |
+| `media` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `probe(folder / name)` |
+| `exc` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `caught exception` |
+| `videos` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[item for item in media.get('streams', []) if item['codec_type'] == 'video']` |
+| `audios` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[item for item in media.get('streams', []) if item['codec_type'] == 'audio']` |
+| `draft` | Recoverable appearance edits kept separate from explicitly saved render configuration. | `record.get('subtitle_draft')` |
+
+### `inspect_package(stage)`
+
+Verify every ZIP name/hash/budget before creating any durable library record.
+
+Source: [backend/app/packages.py:225](../backend/app/packages.py).
+
+- `stage`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `i` | Zero-based iteration index local to the current loop. | `infos` |
+| `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `identifier` |
+| `f` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `e['files'].values()` |
+| `e` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entries` |
+| `extracted` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `stage / 'validated'` |
+| `infos` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `archive.infolist()` |
+| `info` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `infos` |
+| `path` | Controlled filesystem location, never an uploaded filename. | `PurePosixPath(info.filename)` |
+| `manifest` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads(archive.read(info))` |
+| `entries` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `manifest.get('items')` |
+| `allowed` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'manifest.json'}` |
+| `identities` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `set()` |
+| `expanded` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `0` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entries` |
+| `kind` | Allowlisted operation/artifact key, not an arbitrary filename. | `entry['kind']` |
+| `record` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entry['record']` |
+| `identifier` | Allowlisted UUID key for a durable project/template, never an arbitrary path. | `record['id']` |
+| `key` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `('created', 'updated', 'deleted_at')` |
+| `value` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `record.get(key)` |
+| `version` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `record.get('subtitle_version', 0)` |
+| `folder` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `extracted / kind / identifier` |
+| `files` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entry['files']` |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `files.items()` |
+| `meta` | Inspected audio metadata including duration and selected stream. | `files.items()` |
+| `member` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `f'{kind}/{identifier}/{name}'` |
+| `part` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `archive.getinfo(member)` |
+| `maximum` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `settings.max_audio_bytes if name == 'audio.bin' else settings.max_image_bytes if name.endswith('.png') else settings.max_srt_bytes if name.endswith('.srt') else settings.max_bundle_expanded_bytes` |
+| `written` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `0` |
+| `block` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `iter(lambda: source.read(1024 ** 2), b'')` |
+| `normalized` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `folder / 'normalized.png'` |
+| `exc` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `caught exception` |
+
+### `install(stage)`
+
+Merge verified items under fresh IDs; roll back newly created copies on any installation failure.
+
+Source: [backend/app/packages.py:391](../backend/app/packages.py).
+
+- `stage`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `name` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entry['files']` |
+| `manifest` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads((stage / 'verified.json').read_text(encoding='utf-8'))` |
+| `created` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[]` |
+| `projects` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[]` |
+| `templates` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `[]` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `manifest['items']` |
+| `kind` | Allowlisted operation/artifact key, not an arbitrary filename. | `entry['kind']` |
+| `record` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `entry['record']` |
+| `identifier` | Allowlisted UUID key for a durable project/template, never an arbitrary path. | `uuid.uuid4().hex` |
+| `target` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `library.directory(kind, identifier)` |
+| `source` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `stage / 'validated' / kind / record['id']` |
+| `deleted` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `time.time() if record.get('deleted_at') is not None else None` |
+| `saved` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `json.loads(record['snapshot'])` |
+| `destination` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `library.location(kind, identifier, True)` |
+| `path` | Controlled filesystem location, never an uploaded filename. | `created` |
 
 ## backend/app/preflight.py
 
@@ -1750,6 +2399,109 @@ Source: [backend/app/transcription.py:138](../backend/app/transcription.py).
 | `job.phase` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `'Cargando modelo local (primera vez: descarga de Hugging Face)'` |
 | `job.progress` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `None` |
 | `processed` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `float(data['processed_seconds'])` |
+
+## backend/app/transfers.py
+
+Short-lived package transfer tickets with leases and UUID-only temporary cleanup.
+
+### `TransferManager()`
+
+Own staged package files, expiry and single-consumer leases independently of job credentials.
+
+Source: [backend/app/transfers.py:12](../backend/app/transfers.py).
+
+### `TransferManager.__init__(self, root)`
+
+Bind cleanup to the workspace root resolved at application startup.
+
+Source: [backend/app/transfers.py:15](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `root`: Exclusive temporary root or repository root; inspect the initializer.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `self.root` | Exclusive temporary root or repository root; inspect the initializer. | `root.resolve()` |
+| `self.lock` | Reentrant lock protecting shared registry changes. | `threading.RLock()` |
+| `self.entries` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{}` |
+
+### `TransferManager.remove(self, path)`
+
+Delete only an exact UUID directory allocated by this manager under its captured root.
+
+Source: [backend/app/transfers.py:21](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `path`: Controlled filesystem location, never an uploaded filename.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `c` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `path.name` |
+
+### `TransferManager.begin(self, kind)`
+
+Reserve one bounded transfer slot and an empty private staging directory.
+
+Source: [backend/app/transfers.py:34](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `identifier` | Allowlisted UUID key for a durable project/template, never an arbitrary path. | `uuid.uuid4().hex` |
+| `stage` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `self.root / identifier` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{'id': identifier, 'path': stage, 'kind': kind, 'expires': time.time() + 1800, 'busy': True}` |
+
+### `TransferManager.ready(self, entry, **metadata)`
+
+Publish a completed build/validation ticket and its review metadata.
+
+Source: [backend/app/transfers.py:53](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `entry`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+### `TransferManager.discard(self, identifier)`
+
+Consume a transfer after success/cancel; active leases must be ended by their owner.
+
+Source: [backend/app/transfers.py:58](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `self.entries.pop(identifier, None)` |
+
+### `TransferManager.lease(self, identifier, kind)`
+
+Prevent duplicate confirmation/download and protect staged files from expiry while in use.
+
+Source: [backend/app/transfers.py:66](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `identifier`: Allowlisted UUID key for a durable project/template, never an arbitrary path.
+- `kind`: Allowlisted operation/artifact key, not an arbitrary filename.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `self.entries.get(identifier)` |
+
+### `TransferManager.clean(self, force=False)`
+
+Expire idle tickets; a busy download/import is never removed underneath its consumer.
+
+Source: [backend/app/transfers.py:83](../backend/app/transfers.py).
+
+- `self`: The current Python class instance.
+- `force`: Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting.
+
+| Variable / attribute | Explanation | Initializer / assignment excerpt |
+| --- | --- | --- |
+| `identifier` | Allowlisted UUID key for a durable project/template, never an arbitrary path. | `list(self.entries.items())` |
+| `entry` | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `list(self.entries.items())` |
 
 ## backend/app/uploads.py
 
@@ -2194,6 +2946,18 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `DesignEntry.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `DesignEntry.file` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `e.currentTarget.files?.[0]` |
 
+## frontend/src/drafts.ts
+
+| Symbol and scope | Kind | Explanation | Signature / initializer excerpt |
+| --- | --- | --- | --- |
+| `module.savers` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `new Set<() => Promise<void>>()` |
+| `module.registerDraft` | FunctionDeclaration | Register a pending editor save and return lifecycle cleanup. | `save: () => Promise<void>` |
+| `registerDraft.save` | Parameter | Persist the current editor value and report a stale generation rather than claiming success. | `() => Promise<void>` |
+| `registerDraft.callback@6` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `module.flushDrafts` | FunctionDeclaration | Await active draft writes before navigation, close or backup. | `` |
+| `flushDrafts.callback@12` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `flushDrafts.save` | Parameter | Persist the current editor value and report a stale generation rather than claiming success. | `` |
+
 ## frontend/src/i18n.ts
 
 | Symbol and scope | Kind | Explanation | Signature / initializer excerpt |
@@ -2240,6 +3004,133 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `LanguageSelector.callback@10` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `LanguageSelector.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 
+## frontend/src/LibraryTools.tsx
+
+| Symbol and scope | Kind | Explanation | Signature / initializer excerpt |
+| --- | --- | --- | --- |
+| `module.storageSize` | FunctionDeclaration | Format byte counts with binary units for storage/transfer feedback. | `value = 0` |
+| `storageSize.value` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `0` |
+| `storageSize.unit` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Math.min(3, Math.floor(Math.log(value) / Math.log(1024)))` |
+| `module.LibraryItem` | InterfaceDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryItem.id` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `LibraryItem.title` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `LibraryItem.kind` | PropertySignature | Allowlisted operation/artifact key, not an arbitrary filename. | `"projects" \| "templates"` |
+| `LibraryItem.bytes` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `LibraryItem.updated` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `LibraryItem.confirm_name` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `module.ImportReview` | InterfaceDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ImportReview.ticket` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `ImportReview.items` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ kind: string; title: string; bytes: number; in_trash: boolean }[]` |
+| `ImportReview.kind` | PropertySignature | Allowlisted operation/artifact key, not an arbitrary filename. | `string` |
+| `ImportReview.title` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `ImportReview.bytes` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `ImportReview.in_trash` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
+| `ImportReview.bytes` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `module.LibraryTools` | FunctionDeclaration | Manage portable project packages, reviewed imports, backups, storage, names and recoverable Trash. | `{ projects, beforeAction, onChanged, onTrashed, disabled, }: { projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: st` |
+| `LibraryTools.projects` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: string) => void; disabled: boolean; }` |
+| `LibraryTools.beforeAction` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: string) => void; disabled: boolean; }` |
+| `LibraryTools.onChanged` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: string) => void; disabled: boolean; }` |
+| `LibraryTools.onTrashed` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: string) => void; disabled: boolean; }` |
+| `LibraryTools.disabled` | Parameter | Combined gate for busy, active or unavailable episodes. | `{ projects: Omit<LibraryItem, "kind">[]; beforeAction?: () => Promise<void>; onChanged: () => void; onTrashed?: (id: string) => void; disabled: boolean; }` |
+| `LibraryTools.projects` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Omit<LibraryItem, "kind">[]` |
+| `LibraryTools.beforeAction` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => Promise<void>` |
+| `LibraryTools.onChanged` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => void` |
+| `LibraryTools.onTrashed` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(id: string) => void` |
+| `LibraryTools.id` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `LibraryTools.disabled` | PropertySignature | Combined gate for busy, active or unavailable episodes. | `boolean` |
+| `LibraryTools.templates` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<LibraryItem[]>([])` |
+| `LibraryTools.setTemplates` | VariableDeclaration | React state setter for templates. Schedules a rerender, not a server mutation. | `useState<LibraryItem[]>([])` |
+| `LibraryTools.trash` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<LibraryItem[]>([])` |
+| `LibraryTools.setTrash` | VariableDeclaration | React state setter for trash. Schedules a rerender, not a server mutation. | `useState<LibraryItem[]>([])` |
+| `LibraryTools.usage` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<Record<string, number>>({})` |
+| `LibraryTools.setUsage` | VariableDeclaration | React state setter for usage. Schedules a rerender, not a server mutation. | `useState<Record<string, number>>({})` |
+| `LibraryTools.query` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("")` |
+| `LibraryTools.setQuery` | VariableDeclaration | React state setter for query. Schedules a rerender, not a server mutation. | `useState("")` |
+| `LibraryTools.sort` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("updated")` |
+| `LibraryTools.setSort` | VariableDeclaration | React state setter for sort. Schedules a rerender, not a server mutation. | `useState("updated")` |
+| `LibraryTools.selected` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<LibraryItem \| null>(null)` |
+| `LibraryTools.setSelected` | VariableDeclaration | React state setter for selected. Schedules a rerender, not a server mutation. | `useState<LibraryItem \| null>(null)` |
+| `LibraryTools.mode` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<"rename" \| "trash" \| "purge">("rename")` |
+| `LibraryTools.setMode` | VariableDeclaration | React state setter for mode. Schedules a rerender, not a server mutation. | `useState<"rename" \| "trash" \| "purge">("rename")` |
+| `LibraryTools.name` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("")` |
+| `LibraryTools.setName` | VariableDeclaration | React state setter for name. Schedules a rerender, not a server mutation. | `useState("")` |
+| `LibraryTools.busy` | VariableDeclaration | Browser request-in-flight flag preventing duplicate actions. | `useState(false)` |
+| `LibraryTools.setBusy` | VariableDeclaration | React state setter for busy. Schedules a rerender, not a server mutation. | `useState(false)` |
+| `LibraryTools.error` | VariableDeclaration | Safe explanatory failure text; must not expose secrets or raw stderr. | `useState("")` |
+| `LibraryTools.setError` | VariableDeclaration | React state setter for error. Schedules a rerender, not a server mutation. | `useState("")` |
+| `LibraryTools.review` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<ImportReview \| null>(null)` |
+| `LibraryTools.setReview` | VariableDeclaration | React state setter for review. Schedules a rerender, not a server mutation. | `useState<ImportReview \| null>(null)` |
+| `LibraryTools.download` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<{ url: string; filename: string; bytes: number; } \| null>(null)` |
+| `LibraryTools.setDownload` | VariableDeclaration | React state setter for download. Schedules a rerender, not a server mutation. | `useState<{ url: string; filename: string; bytes: number; } \| null>(null)` |
+| `LibraryTools.url` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `LibraryTools.filename` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `LibraryTools.bytes` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `LibraryTools.status` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("")` |
+| `LibraryTools.setStatus` | VariableDeclaration | React state setter for status. Schedules a rerender, not a server mutation. | `useState("")` |
+| `LibraryTools.locked` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `busy \|\| disabled` |
+| `LibraryTools.refresh` | FunctionDeclaration | Reload local brand-template summaries through the library session. | `` |
+| `LibraryTools.refresh.a` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await Promise.all([ api<LibraryItem[]>("/templates"), api<LibraryItem[]>("/library/trash"), api<Record<string, number>>("/library/usage"), ])` |
+| `LibraryTools.refresh.b` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await Promise.all([ api<LibraryItem[]>("/templates"), api<LibraryItem[]>("/library/trash"), api<Record<string, number>>("/library/usage"), ])` |
+| `LibraryTools.refresh.c` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await Promise.all([ api<LibraryItem[]>("/templates"), api<LibraryItem[]>("/library/trash"), api<Record<string, number>>("/library/usage"), ])` |
+| `LibraryTools.refresh.callback@67` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.refresh.x` | Parameter | Horizontal title coordinate in video pixels, when used in make_ass. | `` |
+| `LibraryTools.callback@72` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@73` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.run` | FunctionDeclaration | Wrap subtitle operations with busy/error feedback. | `action: () => Promise<void>` |
+| `LibraryTools.run.action` | Parameter | POST one authenticated operation and replace the local job snapshot. | `() => Promise<void>` |
+| `LibraryTools.run.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.choose` | FunctionDeclaration | Open an explicit rename, Trash or typed deletion confirmation. | `item: LibraryItem, operation: typeof mode` |
+| `LibraryTools.choose.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `LibraryItem` |
+| `LibraryTools.choose.operation` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `typeof mode` |
+| `LibraryTools.items` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `LibraryItem[]` |
+| `LibraryTools.callback@97` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.p` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@100` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.i` | Parameter | Zero-based iteration index local to the current loop. | `` |
+| `LibraryTools.callback@103` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.a` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.b` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@126` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@127` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@141` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.file` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `e.target.files?.[0]` |
+| `LibraryTools.callback@145` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@164` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@165` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@174` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@175` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@194` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.i` | Parameter | Zero-based iteration index local to the current loop. | `` |
+| `LibraryTools.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@205` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@206` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@221` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@222` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@240` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@246` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@253` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@261` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@264` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@270` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@271` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@299` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@305` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@306` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@317` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@326` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@328` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.path` | VariableDeclaration | Controlled filesystem location, never an uploaded filename. | ``/library/items/${selected.kind}/${selected.id}`` |
+| `LibraryTools.callback@386` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `LibraryTools.callback@405` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+
 ## frontend/src/main.tsx
 
 | Symbol and scope | Kind | Explanation | Signature / initializer excerpt |
@@ -2247,7 +3138,7 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `module.App` | FunctionDeclaration | Own the current job, token, editable design and four-step workflow; subscribe to UI locale changes. | `` |
 | `App.locale` | VariableDeclaration | Interface language en/es; does not translate episode content. | `useLocale()` |
 | `App.text` | VariableDeclaration | Subtitle/title text; escape before ASS insertion and never translate user content. | `getText()` |
-| `App.callback@28` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@29` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.libraryRevision` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState(0)` |
 | `App.setLibraryRevision` | VariableDeclaration | React state setter for libraryRevision. Schedules a rerender, not a server mutation. | `useState(0)` |
 | `App.editingSubtitles` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState(false)` |
@@ -2288,23 +3179,23 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `App.setTranscriptionModel` | VariableDeclaration | React state setter for transcriptionModel. Schedules a rerender, not a server mutation. | `useState("tiny")` |
 | `App.heading` | VariableDeclaration | React ref used to focus the newly selected workflow heading. | `useRef<HTMLHeadingElement>(null)` |
 | `App.active` | VariableDeclaration | Whether the job is queued/running/cancelling. | `isActive(job)` |
-| `App.callback@57` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@60` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@58` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@61` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@62` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@65` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@63` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@66` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.stopped` | VariableDeclaration | Effect cleanup guard preventing stale polling state updates. | `false` |
 | `App.timer` | VariableDeclaration | Polling interval handle cleared when the effect is disposed. | `setInterval(() => { api<Job>(`/jobs/${job.id}`, token) .then((next) => { if (stopped) return; setJob((previous) => { if (isActive(previous) && !isActive(next)) setRevision((r) => r` |
-| `App.callback@68` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@70` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@69` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@71` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.next` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@72` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@73` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.previous` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@74` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@75` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.r` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@78` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@79` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@87` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@88` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.perform` | FunctionDeclaration | Run an async action with busy/error feedback and recognize an unavailable job. | `action: () => Promise<void>` |
 | `App.perform.action` | Parameter | POST one authenticated operation and replace the local job snapshot. | `() => Promise<void>` |
 | `App.perform.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
@@ -2312,27 +3203,27 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `App.upload.event` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `React.FormEvent<HTMLFormElement>` |
 | `App.upload.data` | VariableDeclaration | Payload being parsed/transferred; validate before trusting fields. | `new FormData(event.currentTarget)` |
 | `App.upload.key` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.upload.callback@113` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.upload.callback@114` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.upload.result` | VariableDeclaration | Result of the operation/parser/API named by its assignment. | `await api<Job & { token: string }>( `/jobs?subtitle_mode=${subtitleMode}&language=${language}&model=${transcriptionModel}`, undefined, "POST", data, )` |
 | `App.upload.token` | PropertySignature | Secret authentication value held in memory and sent in X-Job-Token. | `string` |
-| `App.upload.callback@121` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.upload.callback@122` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.upload.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.change` | FunctionDeclaration | Update one draft Design field and mark it unsaved without contacting the backend. | `key: K, value: Design[K]` |
 | `App.change.key` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `K` |
 | `App.change.value` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `Design[K]` |
-| `App.change.callback@135` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.change.callback@136` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.change.d` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.save` | FunctionDeclaration | Persist the complete Design and refresh the job snapshot only after success. | `` |
+| `App.save` | FunctionDeclaration | Persist the current editor value and report a stale generation rather than claiming success. | `` |
 | `App.save.result` | VariableDeclaration | Result of the operation/parser/API named by its assignment. | `await api<Job>( `/jobs/${job.id}/config`, token, "PATCH", JSON.stringify(design), )` |
-| `App.save.callback@152` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.save.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.save.callback@153` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.save.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.save.callback@154` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.save.r` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.importDesign` | FunctionDeclaration | Read a bounded design JSON, validate it through the backend and retain the previous design on failure. | `file: File` |
 | `App.importDesign.file` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `File` |
 | `App.importDesign.data` | VariableDeclaration | Payload being parsed/transferred; validate before trusting fields. | `unknown` |
 | `App.importDesign.result` | VariableDeclaration | Result of the operation/parser/API named by its assignment. | `await api<Job>( `/jobs/${job.id}/config`, token, "PATCH", JSON.stringify(data), )` |
-| `App.importDesign.callback@181` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.importDesign.callback@182` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.importDesign.r` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.action` | FunctionDeclaration | POST one authenticated operation and replace the local job snapshot. | `path: string, body?: unknown` |
 | `App.action.path` | Parameter | Controlled filesystem location, never an uploaded filename. | `string` |
@@ -2341,100 +3232,107 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `App.saveRetainedDesign` | FunctionDeclaration | Download the in-memory design without needing an available backend job. | `` |
 | `App.saveRetainedDesign.url` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `URL.createObjectURL( new Blob([JSON.stringify(design, null, 2)], { type: "application/json" }), )` |
 | `App.saveRetainedDesign.link` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `document.createElement("a")` |
-| `App.saveRetainedDesign.callback@206` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.saveRetainedDesign.callback@207` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.mode` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `job?.background_mode === "openai" ? text.openai : job?.background_mode === "upload" ? text.uploadMode : text.local` |
-| `App.callback@247` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@248` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.label` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.index` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@253` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@263` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@274` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@254` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@256` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@257` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@269` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.id` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@278` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.result` | Parameter | Result of the operation/parser/API named by its assignment. | `` |
-| `App.callback@285` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@289` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@311` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@350` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@315` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@354` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@383` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@387` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@402` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@406` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@495` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@505` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@499` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@509` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.file` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@505` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@512` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@509` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@516` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@534` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.result` | Parameter | Result of the operation/parser/API named by its assignment. | `` |
 | `App.callback@538` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.result` | Parameter | Result of the operation/parser/API named by its assignment. | `` |
+| `App.callback@542` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@543` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@543` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@547` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@549` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@549` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.v` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@552` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@565` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@550` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@575` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@560` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@573` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@585` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@583` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@605` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@593` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@616` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@613` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@626` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@624` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@649` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@634` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@668` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@657` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@681` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@676` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@708` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@689` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@723` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@716` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@737` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@731` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@753` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@745` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@767` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@761` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@783` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@775` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@794` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@791` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@808` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@802` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@827` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@816` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@838` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@835` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@857` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@858` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@859` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@875` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@875` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@912` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@846` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@918` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@918` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@865` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@866` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@867` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@883` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@883` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@920` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.callback@926` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@927` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@937` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@963` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@963` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1069` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1069` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1093` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@926` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@934` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@935` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@945` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@971` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@971` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1077` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1077` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1101` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.w` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.i` | Parameter | Zero-based iteration index local to the current loop. | `` |
-| `App.callback@1112` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1113` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1119` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1120` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1121` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1128` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `App.callback@1145` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `App.callback@1154` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.key` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `App.ok` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `module.mount` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `document.getElementById("root")` |
@@ -2486,19 +3384,27 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `ProjectSummary.updated` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
 | `ProjectSummary.state` | PropertySignature | Lifecycle enum, independent of interface language. | `string` |
 | `ProjectSummary.has_draft` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
+| `ProjectSummary.bytes` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
 | `module.resumeStep` | FunctionDeclaration | Reopen at the latest subtitle/design/preview/export stage with valid artifacts and approvals. | `job: Job` |
 | `resumeStep.job` | Parameter | Temporary episode with metadata, files, approvals and cancellation resources. | `Job` |
-| `module.ProjectLibrary` | FunctionDeclaration | List durable local projects and reopen or duplicate them after flushing the current design draft. | `{ onOpen, disabled, revision = 0, beforeOpen, }: { onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; }` |
-| `ProjectLibrary.onOpen` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; }` |
-| `ProjectLibrary.disabled` | Parameter | Combined gate for busy, active or unavailable episodes. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; }` |
-| `ProjectLibrary.revision` | Parameter | Cache-busting counter incremented when artifacts/settings change. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; }` |
-| `ProjectLibrary.beforeOpen` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; }` |
+| `module.ProjectLibrary` | FunctionDeclaration | List durable local projects and reopen or duplicate them after flushing the current design draft. | `{ onOpen, disabled, revision = 0, beforeOpen, onTrashed, }: { onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>` |
+| `ProjectLibrary.onOpen` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; onTrashed?: (id: string) => void; }` |
+| `ProjectLibrary.disabled` | Parameter | Combined gate for busy, active or unavailable episodes. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; onTrashed?: (id: string) => void; }` |
+| `ProjectLibrary.revision` | Parameter | Cache-busting counter incremented when artifacts/settings change. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; onTrashed?: (id: string) => void; }` |
+| `ProjectLibrary.beforeOpen` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; onTrashed?: (id: string) => void; }` |
+| `ProjectLibrary.onTrashed` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `{ onOpen: (job: Job & { token: string }) => void; disabled: boolean; revision?: number; beforeOpen?: () => Promise<void>; onTrashed?: (id: string) => void; }` |
 | `ProjectLibrary.onOpen` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(job: Job & { token: string }) => void` |
 | `ProjectLibrary.job` | Parameter | Temporary episode with metadata, files, approvals and cancellation resources. | `Job & { token: string }` |
 | `ProjectLibrary.token` | PropertySignature | Secret authentication value held in memory and sent in X-Job-Token. | `string` |
 | `ProjectLibrary.disabled` | PropertySignature | Combined gate for busy, active or unavailable episodes. | `boolean` |
 | `ProjectLibrary.revision` | PropertySignature | Cache-busting counter incremented when artifacts/settings change. | `number` |
 | `ProjectLibrary.beforeOpen` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => Promise<void>` |
+| `ProjectLibrary.onTrashed` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(id: string) => void` |
+| `ProjectLibrary.id` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `ProjectLibrary.query` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("")` |
+| `ProjectLibrary.setQuery` | VariableDeclaration | React state setter for query. Schedules a rerender, not a server mutation. | `useState("")` |
+| `ProjectLibrary.sort` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("updated")` |
+| `ProjectLibrary.setSort` | VariableDeclaration | React state setter for sort. Schedules a rerender, not a server mutation. | `useState("updated")` |
 | `ProjectLibrary.details` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useRef<HTMLDetailsElement>(null)` |
 | `ProjectLibrary.items` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<ProjectSummary[]>([])` |
 | `ProjectLibrary.setItems` | VariableDeclaration | React state setter for items. Schedules a rerender, not a server mutation. | `useState<ProjectSummary[]>([])` |
@@ -2508,29 +3414,41 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `ProjectLibrary.setWorking` | VariableDeclaration | React state setter for working. Schedules a rerender, not a server mutation. | `useState(false)` |
 | `ProjectLibrary.reload` | VariableDeclaration | Counter triggering an explicit subtitle refetch. | `useState(0)` |
 | `ProjectLibrary.setReload` | VariableDeclaration | React state setter for reload. Schedules a rerender, not a server mutation. | `useState(0)` |
-| `ProjectLibrary.callback@37` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@45` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.current` | VariableDeclaration | Async cleanup guard against stale/unmounted SRT updates. | `true` |
 | `ProjectLibrary.ready` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
-| `ProjectLibrary.callback@40` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@41` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@48` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@49` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.data` | Parameter | Payload being parsed/transferred; validate before trusting fields. | `` |
-| `ProjectLibrary.callback@44` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@52` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@47` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@55` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.open` | FunctionDeclaration | Flush the current draft and request an authenticated saved-project reopen or duplication. | `id: string, duplicate = false` |
 | `ProjectLibrary.open.id` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
 | `ProjectLibrary.open.duplicate` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `false` |
 | `ProjectLibrary.open.token` | PropertySignature | Secret authentication value held in memory and sent in X-Job-Token. | `string` |
-| `ProjectLibrary.open.callback@65` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.open.callback@73` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.open.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.open.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@84` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@84` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@92` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@92` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@91` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@103` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@108` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@119` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@119` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@123` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `ProjectLibrary.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@109` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `ProjectLibrary.callback@115` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@126` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.a` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.b` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@133` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@151` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `ProjectLibrary.callback@157` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `module.DraftAutosave` | FunctionDeclaration | Debounce appearance recovery drafts and reject stale base versions without approving render settings. | `{ job, design, dirty, }: { job: Job; design: Design \| null; dirty: boolean; }` |
 | `DraftAutosave.job` | Parameter | Temporary episode with metadata, files, approvals and cancellation resources. | `{ job: Job; design: Design \| null; dirty: boolean; }` |
 | `DraftAutosave.design` | Parameter | Validated episode appearance/encoding settings or unsaved browser draft. | `{ job: Job; design: Design \| null; dirty: boolean; }` |
@@ -2542,19 +3460,23 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `DraftAutosave.setStatus` | VariableDeclaration | React state setter for status. Schedules a rerender, not a server mutation. | `useState("")` |
 | `DraftAutosave.baseVersion` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `JSON.stringify(job.config)` |
 | `DraftAutosave.draftVersion` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `JSON.stringify(design)` |
-| `DraftAutosave.callback@142` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@184` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `DraftAutosave.current` | VariableDeclaration | Async cleanup guard against stale/unmounted SRT updates. | `true` |
 | `DraftAutosave.flush` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => { void fetch(`/api/projects/${job.project_id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ des` |
-| `DraftAutosave.callback@149` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `DraftAutosave.callback@156` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `DraftAutosave.timer` | VariableDeclaration | Polling interval handle cleared when the effect is disposed. | `setTimeout(() => { api("/library/session", undefined, "POST") .then(() => api<{ saved: boolean }>( `/projects/${job.project_id}/draft`, undefined, "PUT", JSON.stringify({ design, b` |
-| `DraftAutosave.callback@159` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `DraftAutosave.callback@161` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@191` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@198` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.unregister` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `registerDraft(async () => { await api("/library/session", undefined, "POST"); const result = await api<{ saved: boolean }>( `/projects/${job.project_id}/draft`, undefined, "PUT", J` |
+| `DraftAutosave.callback@200` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.result` | VariableDeclaration | Result of the operation/parser/API named by its assignment. | `await api<{ saved: boolean }>( `/projects/${job.project_id}/draft`, undefined, "PUT", JSON.stringify({ design, base: job.config }), )` |
 | `DraftAutosave.saved` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
-| `DraftAutosave.callback@169` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.timer` | VariableDeclaration | Polling interval handle cleared when the effect is disposed. | `setTimeout(() => { api("/library/session", undefined, "POST") .then(() => api<{ saved: boolean }>( `/projects/${job.project_id}/draft`, undefined, "PUT", JSON.stringify({ design, b` |
+| `DraftAutosave.callback@214` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@216` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.saved` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
+| `DraftAutosave.callback@224` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `DraftAutosave.result` | Parameter | Result of the operation/parser/API named by its assignment. | `` |
-| `DraftAutosave.callback@177` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `DraftAutosave.callback@184` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@232` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `DraftAutosave.callback@239` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `module.BrandTemplates` | FunctionDeclaration | Name, save and apply reusable visual branding while retaining episode audio/captions/title. | `{ job, token, dirty, disabled, onChange, }: { job: Job; token: string; dirty: boolean; disabled: boolean; onChange: (job: Job) => void; }` |
 | `BrandTemplates.job` | Parameter | Temporary episode with metadata, files, approvals and cancellation resources. | `{ job: Job; token: string; dirty: boolean; disabled: boolean; onChange: (job: Job) => void; }` |
 | `BrandTemplates.token` | Parameter | Secret authentication value held in memory and sent in X-Job-Token. | `{ job: Job; token: string; dirty: boolean; disabled: boolean; onChange: (job: Job) => void; }` |
@@ -2586,22 +3508,22 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `BrandTemplates.refresh.id` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
 | `BrandTemplates.refresh.title` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
 | `BrandTemplates.refresh.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@228` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@284` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `BrandTemplates.run` | FunctionDeclaration | Wrap subtitle operations with busy/error feedback. | `action: () => Promise<void>` |
 | `BrandTemplates.run.action` | Parameter | POST one authenticated operation and replace the local job snapshot. | `() => Promise<void>` |
 | `BrandTemplates.run.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@258` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@314` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `BrandTemplates.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@263` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@264` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@319` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@320` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `BrandTemplates.created` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await api<{ id: string }>( `/jobs/${job.id}/templates`, token, "POST", JSON.stringify({ title: name.trim() \|\| job.config.title }), )` |
 | `BrandTemplates.id` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
-| `BrandTemplates.callback@284` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@340` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `BrandTemplates.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@287` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@343` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `BrandTemplates.item` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@296` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `BrandTemplates.callback@297` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@352` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `BrandTemplates.callback@353` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 
 ## frontend/src/SubtitleReview.tsx
 
@@ -2617,6 +3539,14 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `SubtitleReview.onChange` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `(job: Job) => void` |
 | `SubtitleReview.job` | Parameter | Temporary episode with metadata, files, approvals and cancellation resources. | `Job` |
 | `SubtitleReview.onContinue` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => void` |
+| `SubtitleReview.baseline` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState<{ base_digest: string; base_version: number; } \| null>(null)` |
+| `SubtitleReview.setBaseline` | VariableDeclaration | React state setter for baseline. Schedules a rerender, not a server mutation. | `useState<{ base_digest: string; base_version: number; } \| null>(null)` |
+| `SubtitleReview.base_digest` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `SubtitleReview.base_version` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `SubtitleReview.draftStatus` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState("")` |
+| `SubtitleReview.setDraftStatus` | VariableDeclaration | React state setter for draftStatus. Schedules a rerender, not a server mutation. | `useState("")` |
+| `SubtitleReview.recovered` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState(false)` |
+| `SubtitleReview.setRecovered` | VariableDeclaration | React state setter for recovered. Schedules a rerender, not a server mutation. | `useState(false)` |
 | `SubtitleReview.srt` | VariableDeclaration | SRT under review; editing intentionally discards word alignment. | `useState("")` |
 | `SubtitleReview.setSrt` | VariableDeclaration | React state setter for srt. Schedules a rerender, not a server mutation. | `useState("")` |
 | `SubtitleReview.original` | VariableDeclaration | Last saved SRT text for dirty-state comparison. | `useState("")` |
@@ -2625,33 +3555,61 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `SubtitleReview.setError` | VariableDeclaration | React state setter for error. Schedules a rerender, not a server mutation. | `useState("")` |
 | `SubtitleReview.busy` | VariableDeclaration | Browser request-in-flight flag preventing duplicate actions. | `useState(false)` |
 | `SubtitleReview.setBusy` | VariableDeclaration | React state setter for busy. Schedules a rerender, not a server mutation. | `useState(false)` |
+| `SubtitleReview.loading` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `useState(true)` |
+| `SubtitleReview.setLoading` | VariableDeclaration | React state setter for loading. Schedules a rerender, not a server mutation. | `useState(true)` |
 | `SubtitleReview.reload` | VariableDeclaration | Counter triggering an explicit subtitle refetch. | `useState(0)` |
 | `SubtitleReview.setReload` | VariableDeclaration | React state setter for reload. Schedules a rerender, not a server mutation. | `useState(0)` |
 | `SubtitleReview.active` | VariableDeclaration | Whether the job is queued/running/cancelling. | `isActive(job)` |
-| `SubtitleReview.callback@25` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@33` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `SubtitleReview.current` | VariableDeclaration | Async cleanup guard against stale/unmounted SRT updates. | `true` |
 | `SubtitleReview.srt` | PropertySignature | SRT under review; editing intentionally discards word alignment. | `string` |
-| `SubtitleReview.callback@30` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.base_digest` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
+| `SubtitleReview.base_version` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `number` |
+| `SubtitleReview.draft` | PropertySignature | Recoverable appearance edits kept separate from explicitly saved render configuration. | `string \| null` |
+| `SubtitleReview.draft_conflict` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
+| `SubtitleReview.callback@49` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `SubtitleReview.data` | Parameter | Payload being parsed/transferred; validate before trusting fields. | `` |
-| `SubtitleReview.callback@36` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@68` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `SubtitleReview.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@37` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@71` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@74` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.dirty` | VariableDeclaration | Whether draft settings/text differ from the saved version. | `srt !== original` |
+| `SubtitleReview.callback@79` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.current` | VariableDeclaration | Async cleanup guard against stale/unmounted SRT updates. | `true` |
+| `SubtitleReview.payload` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `JSON.stringify({ srt, ...baseline })` |
+| `SubtitleReview.save` | FunctionDeclaration | Persist the current editor value and report a stale generation rather than claiming success. | `` |
+| `SubtitleReview.save.result` | VariableDeclaration | Result of the operation/parser/API named by its assignment. | `await api<{ saved: boolean }>( `/projects/${job.project_id}/subtitle-draft`, undefined, "PUT", payload, )` |
+| `SubtitleReview.save.saved` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
+| `SubtitleReview.unregister` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `registerDraft(save)` |
+| `SubtitleReview.timer` | VariableDeclaration | Polling interval handle cleared when the effect is disposed. | `setTimeout(() => { void save().catch((e) => { if (current) setDraftStatus(e.message); }); }, 900)` |
+| `SubtitleReview.callback@100` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@101` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.pagehide` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `() => { if (new Blob([payload]).size < 60000) void fetch(`/api/projects/${job.project_id}/subtitle-draft`, { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "` |
+| `SubtitleReview.callback@105` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@113` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@116` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `SubtitleReview.run` | FunctionDeclaration | Wrap subtitle operations with busy/error feedback. | `action: () => Promise<void>` |
 | `SubtitleReview.run.action` | Parameter | POST one authenticated operation and replace the local job snapshot. | `() => Promise<void>` |
 | `SubtitleReview.run.e` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.dirty` | VariableDeclaration | Whether draft settings/text differ from the saved version. | `srt !== original` |
-| `SubtitleReview.callback@77` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@78` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@121` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@128` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@129` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.next` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await api<Job>( `/jobs/${job.id}/subtitles`, token, "PUT", JSON.stringify({ srt }), )` |
-| `SubtitleReview.callback@147` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@147` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@158` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@159` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@196` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@204` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@212` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 | `SubtitleReview.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@156` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
-| `SubtitleReview.callback@157` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@234` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.e` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@241` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@242` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.next` | VariableDeclaration | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `await api<Job>( `/jobs/${job.id}/subtitles`, token, "PUT", JSON.stringify({ srt, ...baseline }), )` |
+| `SubtitleReview.callback@252` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@264` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@264` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.n` | Parameter | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@274` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
+| `SubtitleReview.callback@275` | ArrowFunction | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `` |
 
 ## frontend/src/SubtitleTimeline.tsx
 
@@ -2807,6 +3765,7 @@ Small local pipeline for debugging; outputs are explicitly retained by the user.
 | `Job.artifacts` | PropertySignature | Available output kinds; stale renders are discarded after edits. | `string[]` |
 | `Job.expires_at` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `string` |
 | `Job.subtitle_source` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `"upload" \| "generate"` |
+| `Job.subtitle_draft_available` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
 | `Job.subtitles_ready` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
 | `Job.subtitles_approved` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |
 | `Job.word_timestamps` | PropertySignature | Scope-local value defined by the exact assignment/type excerpt below; not a separate persisted setting. | `boolean` |

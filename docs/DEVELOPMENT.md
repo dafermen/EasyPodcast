@@ -10,7 +10,7 @@ Run scripts/start.ps1 (Windows) or scripts/start.sh (macOS) for the backend on 8
 npm.cmd --prefix frontend run dev
 ```
 
-Vite serves 127.0.0.1:5173 and proxies /api to 8000. A frontend-only production build needs no backend restart. Backend changes require restart, which interrupts temporary operations. Reopen a durable project from the library afterward. A browser refresh loses the current workspace token; acknowledged design drafts can be recovered, while unacknowledged edits/SRT drafts still need explicit care.
+Vite serves 127.0.0.1:5173 and proxies /api to 8000. A frontend-only production build needs no backend restart. Backend changes require restart, which interrupts temporary operations. Reopen a durable project from the library afterward. A browser refresh loses the current workspace token; acknowledged design and raw subtitle drafts can be recovered, while unacknowledged edits still need explicit care.
 
 ## Editing conventions
 

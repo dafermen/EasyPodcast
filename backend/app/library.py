@@ -1,5 +1,6 @@
 """Durable local projects and brand templates, separate from disposable render workspaces."""
 
+import hashlib
 import json
 import secrets
 import shutil
@@ -35,7 +36,7 @@ def root():
     directory = settings.library_root.expanduser().absolute()
     if directory.resolve().is_relative_to(Path(__file__).resolve().parents[2]):
         raise ValueError("Library must be outside the source repository.")
-    if directory.is_symlink():
+    if directory.is_symlink() or directory.is_junction():
         raise ValueError("Library directory cannot be a symbolic link.")
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     marker = directory / ".easypodcast-library"
@@ -59,6 +60,19 @@ def database():
     connection.execute(
         "CREATE TABLE IF NOT EXISTS templates (id TEXT PRIMARY KEY, title TEXT, updated REAL, design TEXT)"
     )
+    for table, additions in {
+        "projects": {
+            "display_name": "TEXT",
+            "deleted_at": "REAL",
+            "subtitle_draft": "TEXT",
+            "subtitle_version": "INTEGER NOT NULL DEFAULT 0",
+        },
+        "templates": {"deleted_at": "REAL"},
+    }.items():
+        columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table})")}
+        for name, definition in additions.items():
+            if name not in columns:
+                connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
     connection.commit()
     try:
         yield connection
@@ -94,11 +108,11 @@ def directory(kind, identifier):
     ):
         raise HTTPException(404, "Saved item not found.")
     parent = root() / kind
-    if parent.is_symlink():
+    if parent.is_symlink() or parent.is_junction():
         raise ValueError("Library collection cannot be a symbolic link.")
     parent.mkdir(exist_ok=True, mode=0o700)
     target = parent / identifier
-    if target.is_symlink():
+    if target.is_symlink() or target.is_junction():
         raise ValueError("Saved item cannot be a symbolic link.")
     target.mkdir(exist_ok=True, mode=0o700)
     return target
@@ -125,11 +139,13 @@ def checkpoint(job):
             raise ValueError("Required project input is missing; the previous recovery copy was retained.")
         identifier = job.project_id or uuid.uuid4().hex
         job.project_id = identifier
-        target = directory("projects", identifier)
         with database() as connection:
             existing = connection.execute(
-                "SELECT snapshot FROM projects WHERE id=?", (identifier,)
+                "SELECT snapshot,deleted_at FROM projects WHERE id=?", (identifier,)
             ).fetchone()
+            if existing and existing["deleted_at"] is not None:
+                raise ValueError("Project is in Trash. Restore it before editing.")
+            target = directory("projects", identifier)
             previous = json.loads(existing["snapshot"]) if existing else {}
             fingerprints = previous.get("files", {})
             for name in FILES:
@@ -171,7 +187,7 @@ def checkpoint(job):
             }
             now = time.time()
             connection.execute(
-                "INSERT INTO projects VALUES (?,?,?,?,?,?,NULL) ON CONFLICT(id) DO UPDATE SET title=excluded.title,updated=excluded.updated,state=excluded.state,snapshot=excluded.snapshot",
+                "INSERT INTO projects (id,title,created,updated,state,snapshot,draft) VALUES (?,?,?,?,?,?,NULL) ON CONFLICT(id) DO UPDATE SET title=excluded.title,updated=excluded.updated,state=excluded.state,snapshot=excluded.snapshot",
                 (identifier, job.design.title, now, now, job.state, json.dumps(snapshot)),
             )
         return identifier
@@ -181,9 +197,9 @@ def projects():
     """List durable project summaries without secrets or local filesystem paths."""
     with LOCK, database() as connection:
         return [
-            dict(row)
+            {**dict(row), "bytes": item_bytes("projects", row["id"])}
             for row in connection.execute(
-                "SELECT id,title,created,updated,state,(draft IS NOT NULL) AS has_draft FROM projects ORDER BY updated DESC"
+                "SELECT id,COALESCE(display_name,title) AS title,created,updated,state,(draft IS NOT NULL OR subtitle_draft IS NOT NULL) AS has_draft FROM projects WHERE deleted_at IS NULL ORDER BY updated DESC"
             )
         ]
 
@@ -191,7 +207,9 @@ def projects():
 def project(identifier):
     """Read a known project record before resolving any media paths."""
     with LOCK, database() as connection:
-        row = connection.execute("SELECT * FROM projects WHERE id=?", (identifier,)).fetchone()
+        row = connection.execute(
+            "SELECT * FROM projects WHERE id=? AND deleted_at IS NULL", (identifier,)
+        ).fetchone()
         if not row:
             raise HTTPException(404, "Saved project not found.")
         return dict(row)
@@ -245,6 +263,7 @@ def restore(identifier, store, duplicate=False):
                 else Design.model_validate(saved["config"])
             )
             job.project_id = None if duplicate else identifier
+            job.subtitle_draft_available = bool(row["subtitle_draft"])
             job.artifacts = set(saved["artifacts"])
             job.background_mode = saved["background_mode"]
             job.approved = saved["background_approved"]
@@ -261,6 +280,12 @@ def restore(identifier, store, duplicate=False):
             store.jobs[jid] = job
             checkpoint(job)
             clear_draft(job.project_id)
+            if duplicate and row["subtitle_draft"]:
+                with database() as connection:
+                    connection.execute(
+                        "UPDATE projects SET subtitle_draft=?,subtitle_version=? WHERE id=?",
+                        (row["subtitle_draft"], row["subtitle_version"], job.project_id),
+                    )
             return job
         except BaseException:
             store.jobs.pop(jid, None)
@@ -279,7 +304,7 @@ def save_template(job, title):
                 copy_file(source, target / name)
         with database() as connection:
             connection.execute(
-                "INSERT INTO templates VALUES (?,?,?,?)",
+                "INSERT INTO templates (id,title,updated,design) VALUES (?,?,?,?)",
                 (identifier, title, time.time(), job.design.model_dump_json()),
             )
         return identifier
@@ -289,15 +314,19 @@ def templates():
     """List brand presets without returning their media paths."""
     with LOCK, database() as connection:
         return [
-            dict(row)
-            for row in connection.execute("SELECT id,title,updated FROM templates ORDER BY updated DESC")
+            {**dict(row), "bytes": item_bytes("templates", row["id"])}
+            for row in connection.execute(
+                "SELECT id,title,updated FROM templates WHERE deleted_at IS NULL ORDER BY updated DESC"
+            )
         ]
 
 
 def apply_template(job, identifier, store):
     """Reuse a brand template, retaining this episode's title and transcription content."""
     with LOCK, database() as connection:
-        row = connection.execute("SELECT * FROM templates WHERE id=?", (identifier,)).fetchone()
+        row = connection.execute(
+            "SELECT * FROM templates WHERE id=? AND deleted_at IS NULL", (identifier,)
+        ).fetchone()
         if not row:
             raise HTTPException(404, "Brand template not found.")
         design = Design.model_validate_json(row["design"])
@@ -326,3 +355,213 @@ def clear_draft(identifier):
     """Remove a recovery draft only after its configuration was explicitly saved."""
     with LOCK, database() as connection:
         connection.execute("UPDATE projects SET draft=NULL WHERE id=?", (identifier,))
+
+
+def location(kind, identifier, trashed=False):
+    """Read a managed UUID location without creating missing project/template directories."""
+    if (
+        kind not in ("projects", "templates")
+        or len(identifier) != 32
+        or any(c not in "0123456789abcdef" for c in identifier)
+    ):
+        raise HTTPException(404, "Saved item not found.")
+    base = root()
+    target = base / ("trash" if trashed else "") / kind / identifier
+    if not target.resolve().is_relative_to(base.resolve()):
+        raise ValueError("Saved item is outside the managed library.")
+    for path in (target, target.parent, target.parent.parent):
+        if path.is_symlink() or path.is_junction():
+            raise ValueError("Library locations cannot be links or junctions.")
+    return target
+
+
+def item_bytes(kind, identifier, trashed=False):
+    """Count actual local media bytes, including obsolete outputs retained in that item folder."""
+    path = location(kind, identifier, trashed)
+    return (
+        sum(item.stat().st_size for item in path.iterdir() if item.is_file() and not item.is_symlink())
+        if path.is_dir()
+        else 0
+    )
+
+
+def rename(kind, identifier, title):
+    """Rename a library label independently of the video's title and saved appearance."""
+    if kind not in ("projects", "templates"):
+        raise HTTPException(404, "Saved item not found.")
+    with LOCK, database() as connection:
+        column = "display_name" if kind == "projects" else "title"
+        result = connection.execute(
+            f"UPDATE {kind} SET {column}=?,updated=? WHERE id=? AND deleted_at IS NULL",
+            (title.strip(), time.time(), identifier),
+        )
+        if not result.rowcount:
+            raise HTTPException(404, "Saved item not found.")
+
+
+def trash_item(kind, identifier):
+    """Move a saved item into recoverable Trash; roll the move back if metadata cannot commit."""
+    with LOCK, database() as connection:
+        row = (
+            connection.execute(
+                f"SELECT * FROM {kind} WHERE id=? AND deleted_at IS NULL", (identifier,)
+            ).fetchone()
+            if kind in ("projects", "templates")
+            else None
+        )
+        if not row:
+            raise HTTPException(404, "Saved item not found.")
+        source = location(kind, identifier)
+        target = location(kind, identifier, True)
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if target.exists():
+            raise ValueError("Trash destination already exists.")
+        source.replace(target)
+        try:
+            connection.execute(f"UPDATE {kind} SET deleted_at=? WHERE id=?", (time.time(), identifier))
+            connection.commit()
+        except BaseException:
+            target.replace(source)
+            raise
+
+
+def trash_items():
+    """List recoverable items with their space usage; no credentials or disk paths are returned."""
+    with LOCK, database() as connection:
+        result = []
+        for kind in ("projects", "templates"):
+            title = "COALESCE(display_name,title)" if kind == "projects" else "title"
+            for row in connection.execute(
+                f"SELECT id,{title} AS title,deleted_at FROM {kind} WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+            ):
+                result.append(
+                    {
+                        **dict(row),
+                        "confirm_name": row["title"] or row["id"],
+                        "kind": kind,
+                        "bytes": item_bytes(kind, row["id"], True),
+                    }
+                )
+        return result
+
+
+def restore_trash(kind, identifier):
+    """Restore a Trash item to its original identity, preserving its drafts and saved settings."""
+    if kind not in ("projects", "templates"):
+        raise HTTPException(404, "Saved item not found.")
+    with LOCK, database() as connection:
+        row = connection.execute(
+            f"SELECT id FROM {kind} WHERE id=? AND deleted_at IS NOT NULL", (identifier,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Trash item not found.")
+        source = location(kind, identifier, True)
+        target = location(kind, identifier)
+        target.parent.mkdir(exist_ok=True, mode=0o700)
+        if target.exists():
+            raise ValueError("Restore destination already exists.")
+        source.replace(target)
+        try:
+            connection.execute(f"UPDATE {kind} SET deleted_at=NULL WHERE id=?", (identifier,))
+            connection.commit()
+        except BaseException:
+            target.replace(source)
+            raise
+
+
+def purge_trash(kind, identifier, confirmation):
+    """Permanently remove only a named, already-trashed UUID item after explicit user confirmation."""
+    if kind not in ("projects", "templates"):
+        raise HTTPException(404, "Saved item not found.")
+    with LOCK, database() as connection:
+        expression = "COALESCE(display_name,title)" if kind == "projects" else "title"
+        row = connection.execute(
+            f"SELECT {expression} AS title FROM {kind} WHERE id=? AND deleted_at IS NOT NULL", (identifier,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Trash item not found.")
+        if confirmation != (row["title"] or identifier):
+            raise ValueError("Type the exact item name to permanently delete it.")
+        target = location(kind, identifier, True)
+        if target.is_dir():
+            shutil.rmtree(target)
+        connection.execute(f"DELETE FROM {kind} WHERE id=?", (identifier,))
+
+
+def usage():
+    """Report active and Trash bytes separately so deletion does not falsely promise freed space."""
+    with LOCK:
+        projects_size = sum(item["bytes"] for item in projects())
+        templates_size = sum(item["bytes"] for item in templates())
+        trash_size = sum(item["bytes"] for item in trash_items())
+        path = root() / "library.sqlite3"
+        database_size = path.stat().st_size if path.exists() else 0
+        return {
+            "projects_bytes": projects_size,
+            "templates_bytes": templates_size,
+            "trash_bytes": trash_size,
+            "database_bytes": database_size,
+            "total_bytes": projects_size + templates_size + trash_size + database_size,
+            "free_bytes": shutil.disk_usage(root()).free,
+        }
+
+
+def srt_digest(text):
+    """Hash normalized UTF-8 subtitle text for optimistic edit/autosave conflict detection."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def caption_state(job):
+    """Read original caption text plus its recovery draft without applying unapproved corrections."""
+    name = "generated.srt" if job.subtitle_source == "generate" else "original.srt"
+    text = (job.path / name).read_text(encoding="utf-8-sig")
+    result = {
+        "srt": text,
+        "base_digest": srt_digest(text),
+        "base_version": 0,
+        "draft": None,
+        "draft_conflict": False,
+    }
+    if job.project_id:
+        try:
+            record = project(job.project_id)
+        except HTTPException as exc:
+            if exc.status_code == 404 and job.archive_error:
+                return result  # The live SRT remains readable after a failed first archive.
+            raise
+        result["base_version"] = record["subtitle_version"]
+        if record["subtitle_draft"]:
+            draft = json.loads(record["subtitle_draft"])
+            result["draft"] = draft["srt"]
+            result["draft_conflict"] = (
+                draft["base_digest"] != result["base_digest"]
+                or draft["base_version"] != result["base_version"]
+            )
+    return result
+
+
+def save_caption_draft(identifier, srt, base_digest, base_version):
+    """Keep even incomplete SRT text, while rejecting obsolete saves from another edit generation."""
+    if len(srt.encode("utf-8")) > settings.max_srt_bytes:
+        raise ValueError("Subtitle draft exceeds the configured limit.")
+    with LOCK, database() as connection:
+        row = project(identifier)
+        snapshot = json.loads(row["snapshot"])
+        name = "generated.srt" if snapshot["subtitle_source"] == "generate" else "original.srt"
+        original = (location("projects", identifier) / name).read_text(encoding="utf-8-sig")
+        if base_digest != srt_digest(original) or base_version != row["subtitle_version"]:
+            return False
+        draft = json.dumps({"srt": srt, "base_digest": base_digest, "base_version": base_version})
+        connection.execute(
+            "UPDATE projects SET subtitle_draft=?,updated=? WHERE id=?", (draft, time.time(), identifier)
+        )
+        return True
+
+
+def clear_caption_draft(identifier):
+    """Advance the caption edit generation so late requests cannot resurrect saved/discarded drafts."""
+    with LOCK, database() as connection:
+        connection.execute(
+            "UPDATE projects SET subtitle_draft=NULL,subtitle_version=subtitle_version+1 WHERE id=? AND deleted_at IS NULL",
+            (identifier,),
+        )

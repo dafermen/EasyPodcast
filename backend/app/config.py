@@ -11,8 +11,13 @@ class Settings(BaseSettings):
     """Read bounded backend configuration from environment variables and the repository .env file."""
 
     model_config = SettingsConfigDict(env_file=Path(__file__).resolve().parents[2] / ".env", extra="ignore")
-    # FFMPEG: see docs/CONFIGURATION.md for units, defaults and operational effects.
+    # LIBRARY_ROOT: durable private projects, separate from disposable workspaces.
     library_root: Path = Path.home() / ".easypodcast" / "library"
+    # MAX_BUNDLE_BYTES: raw uploaded/built portable ZIP budget in bytes.
+    max_bundle_bytes: int = Field(16 * 1024**3, gt=0)
+    # MAX_BUNDLE_EXPANDED_BYTES: total extracted portable media budget in bytes.
+    max_bundle_expanded_bytes: int = Field(32 * 1024**3, gt=0)
+    # FFMPEG: native executable name or path; see docs/CONFIGURATION.md.
     ffmpeg: str = "ffmpeg"
     # FFPROBE: see docs/CONFIGURATION.md for units, defaults and operational effects.
     ffprobe: str = "ffprobe"

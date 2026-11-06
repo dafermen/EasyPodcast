@@ -1,5 +1,13 @@
 # Implementation status
 
+## Portable library and subtitle recovery · 0.6.0 · 2026-11-05
+
+Implemented the four requested additions: complete project ZIP transfer; reviewed whole-library backup/merge restore including templates and Trash; project/template search/sort/rename, recoverable Trash, typed purge and storage reporting; raw subtitle recovery drafts with digest/generation concurrency protection. New imports always receive independent IDs. Explicit save/discard/approval remains separate from autosave.
+
+Windows verification: 126 backend tests, 30 frontend tests and 2 Node tests passed. Ruff, frontend formatting and TypeScript/Vite build passed. New isolated tests include validation-before-confirmation, malformed/checksum/path/duplicate rejection, failed-install rollback, raw caption recovery/stale writes, word-timing preservation and busy transfer leases. Browser review downloaded a 5.6 MiB project ZIP with a completed portrait MP4, imported it as a separate copy, renamed only its library label, reopened at Export, prepared/cancelled a 13.7 MiB library backup, tested search/sort and English/Spanish controls, and recovered an incomplete subtitle after both browser reload and a real backend restart. The test copy is named Portable workflow check; its valid original SRT was restored afterward. Screenshot: docs/screenshots/portable-library-060.jpg.
+
+The verified local service runs on 127.0.0.1:8001 because Bot4u owns port 8000; Bot4u was left running. Port 8001 was added only to the launched process Origin allowlist. Default startup scripts still use port 8000. Native macOS roundtrip, very large ZIP/library endurance, abrupt power-loss corruption and assistive-technology review remain unverified.
+
 ## Durable studio tools · 0.5.0 · 2026-11-03
 
 Implemented durable SQLite projects/history/covers, reopen/duplicate, versioned appearance drafts, brand templates with media, direct title/logo dragging and resizing with guides, audio-assisted subtitle cue editing, preflight and 16:9/9:16/1:1 output. SRT is downloadable from Export. Completed project snapshots survive restart; active operations are not restarted automatically. Current browser sessions can reconnect to a still-running job after a page reload.

@@ -42,4 +42,10 @@ Review or edit subtitles opens audio playback plus cue blocks and editable start
 
 Before Preview and Export, Pre-export checks reports text overflow, invalid title placement and likely logo collisions. Fix blockers; warnings still need visual review. It cannot identify faces or judge aesthetics. Download the SRT from Export alongside MP4/background/JSON.
 
-Keep originals and back up LIBRARY_ROOT. Persistence does not protect against a deleted library, disk failure, loss of an unacknowledged draft or an operation interrupted before its output was validated. Completed snapshots are recoverable; running encoders/transcription must be explicitly retried. No project deletion or automatic archive pruning is provided in this block; use backups/storage management deliberately.
+Keep originals and back up LIBRARY_ROOT. Persistence does not protect against a deleted library, disk failure, loss of an unacknowledged draft or an operation interrupted before its output was validated. Completed snapshots are recoverable; running encoders/transcription must be explicitly retried. Use recoverable Trash for explicit deletion; archives are never pruned automatically.
+
+## Transfer and organize projects
+
+Open Project library, search by name and choose a sort order. Expand Manage, transfer and back up for Export project ZIP, library backup, ZIP import review, rename and Trash. Download prepared ZIPs within 30 minutes. Import requires a separate confirmation and creates new copies. Restore items from Trash; permanent deletion requires typing the exact name. Storage distinguishes retained Trash from free disk.
+
+Subtitle edits now receive a recovery copy after a short pause, even while SRT is incomplete. Wait for Subtitle recovery draft saved. Reopening restores unfinished text; save valid corrections and approve explicitly, or discard the draft with confirmation. Autosave never starts a render. See [Projects](PROJECTS.md) for transfer contents and limits.

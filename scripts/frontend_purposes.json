@@ -3,7 +3,7 @@
   "perform": "Run an async action with busy/error feedback and recognize an unavailable job.",
   "upload": "Submit selected File objects as multipart data and enter design or subtitle review.",
   "change": "Update one draft Design field and mark it unsaved without contacting the backend.",
-  "save": "Persist the complete Design and refresh the job snapshot only after success.",
+  "save": "Persist the current editor value and report a stale generation rather than claiming success.",
   "importDesign": "Read a bounded design JSON, validate it through the backend and retain the previous design on failure.",
   "action": "POST one authenticated operation and replace the local job snapshot.",
   "saveRetainedDesign": "Download the in-memory design without needing an available backend job.",
@@ -44,5 +44,10 @@
   "open": "Flush the current draft and request an authenticated saved-project reopen or duplication.",
   "refresh": "Reload local brand-template summaries through the library session.",
   "update": "Replace one editable cue field and serialize the new SRT draft.",
-  "resumeStep": "Reopen at the latest subtitle/design/preview/export stage with valid artifacts and approvals."
+  "resumeStep": "Reopen at the latest subtitle/design/preview/export stage with valid artifacts and approvals.",
+  "LibraryTools": "Manage portable project packages, reviewed imports, backups, storage, names and recoverable Trash.",
+  "storageSize": "Format byte counts with binary units for storage/transfer feedback.",
+  "registerDraft": "Register a pending editor save and return lifecycle cleanup.",
+  "flushDrafts": "Await active draft writes before navigation, close or backup.",
+  "choose": "Open an explicit rename, Trash or typed deletion confirmation."
 }

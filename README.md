@@ -77,3 +77,5 @@ Audio, subtitles and local transcription stay on the computer. Model files downl
 - [Contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md) and [third-party notices](THIRD_PARTY_NOTICES.md)
 
 The original application code is MIT licensed. Font files and dependencies retain their own licenses; see LICENSE and THIRD_PARTY_NOTICES.md.
+
+Portable projects and complete library backups are available under **Project library → Manage, transfer and back up**. Import ZIPs with review and confirmation; each import creates new copies. Search, sort, rename, recoverable Trash, storage reporting and subtitle recovery drafts are included. See [projects and transfers](docs/PROJECTS.md).

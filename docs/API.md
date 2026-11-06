@@ -62,3 +62,29 @@ POST /library/session requires an allowed Origin and sets the HttpOnly `ep_libra
 | GET /jobs/{id}/artifacts/audio | Original selected audio input for subtitle playback; token or media cookie required |
 
 Job snapshots add project_id and archive_error. Design adds output_format (landscape/portrait/square), logo_x/logo_y normalized free top-left coordinates (null restores presets), and logo_scale 0.25–2.5. Older design files default to landscape, preset logo placement and scale 1. Subtitle GET also returns structured cues. DELETE job closes only its temporary workspace; the durable project remains. A failed archival checkpoint can block a destructive close with 507 so the only working copy is not discarded.
+
+## Library administration and portable packages (0.6.0)
+
+All routes below require the library session cookie. Mutations also pass the existing Origin allowlist. `kind` is `projects` or `templates`; IDs are managed UUIDs. Project list/template summaries now include actual media `bytes`.
+
+| Method and path | Contract |
+| --- | --- |
+| GET /library/usage | Active project/template, Trash, database, total/free byte counts and package budgets |
+| PATCH /library/items/{kind}/{id} | `{title}` renames the library label; no change to video Design.title |
+| POST /library/items/{kind}/{id}/trash | Explicit recoverable move; checkpoint/close idle workspaces; reject active operations/readers |
+| GET /library/trash | Recoverable items, kind, title, confirm_name, deletion time and bytes |
+| POST /library/trash/{kind}/{id}/restore | Restore original identity/media/drafts |
+| DELETE /library/trash/{kind}/{id} | `{confirmation}` must equal the exact confirmation name; permanent deletion |
+| POST /projects/{id}/export | Build one portable project; return `{url,filename,bytes,expires_at}` |
+| POST /library/backup | Build all projects/templates/Trash; same response |
+| GET /library/exports/{ticket} | Single-use streaming ZIP; no-store; cleanup after response/disconnect |
+| DELETE /library/exports/{ticket} | Cancel an idle prepared download and free its staging slot |
+| POST /library/import | Raw ZIP body, not multipart; validate and return `{ticket,scope,items,bytes,expires_at}` without installing |
+| POST /library/imports/{ticket}/confirm | Install verified items as new IDs; return `{projects:[ids],templates:[ids]}` |
+| DELETE /library/imports/{ticket} | Cancel review and remove staging |
+| PUT /projects/{id}/subtitle-draft | `{srt,base_digest,base_version}` accepts incomplete text; `{saved:false}` if obsolete |
+| DELETE /projects/{id}/subtitle-draft | Discard pending text and advance generation to reject late writes |
+
+Subtitle GET adds `base_digest`, `base_version`, nullable raw `draft` and `draft_conflict`. Subtitle PUT optionally accepts that digest/generation and returns 409 on conflict. Explicit save/discard advances the generation; rendering/approval is blocked while a pending caption draft exists. Job snapshots include `subtitle_draft_available`. Existing clients may omit the optimistic fields, but new clients should always send both.
+
+Transfer tickets expire after 30 minutes idle; at most three staged transfers and one build/import operation are accepted concurrently. An active download/confirmation holds a lease against expiry. Restart invalidates all transfer tickets, while installed projects persist. Rejected packages do not install records. Import limits are configured separately from normal audio multipart uploads. ZIP manifests use format `easypodcast-portable`, integer version 1, scope project/library and per-file sizes/SHA-256. The implementation in packages.py is the protocol reference.

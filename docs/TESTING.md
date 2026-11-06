@@ -38,3 +38,7 @@ Try a fresh English/Studio browser, then Spanish and Classic; verify reload pers
 ## Durable studio validation (0.5.0)
 
 The isolated library suite verifies cross-thread-safe restart/recovery, token-free snapshots, versioned draft conflicts, named media templates, independent duplication, session capacity/eviction, unknown-ID safety, retention of the only workspace copy after archive errors, reconnecting to an active render, and read-only preflight during downloads. Real synthetic renders cover landscape, portrait, square and free-position/scaled logos; a portrait input's original aspect is preserved through library/template/download paths. Browser review additionally exercised recovery after a real restart, pointer drag, audio playback/seek, SRT edits and full export. Performance for large durable libraries and power-loss corruption is not implied by these tests.
+
+## Portable library validation (0.6.0)
+
+Synthetic isolated-library tests cover project/media/draft roundtrips, backup templates and Trash, new identities, validation-before-confirmation, owner/Origin checks, malformed/checksum/path/duplicate rejection, cancellation/budgets, rollback of failed copies, lease expiry and word timestamps. Recovery checks cover incomplete subtitle text, edit-generation conflicts, explicit discard/save and render gates. Frontend tests exercise typed purge confirmation, import review and draft flushing. Never run destructive fixture tests against a real library.

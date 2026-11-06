@@ -129,6 +129,8 @@ class SubtitleEdit(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # Edited UTF-8 SRT payload; saving edits drops estimated word alignment.
     srt: str = Field(min_length=1, max_length=5 * 1024**2)
+    base_digest: str | None = Field(None, pattern=r"^[0-9a-f]{64}$")
+    base_version: int | None = Field(None, ge=0)
 
 
 class DraftRequest(BaseModel):
@@ -144,3 +146,26 @@ class TemplateRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     title: str = Field(min_length=1, max_length=120)
+
+
+class SubtitleDraftRequest(BaseModel):
+    """Keep incomplete subtitle edits as recoverable text, versioned against saved captions."""
+
+    model_config = ConfigDict(extra="forbid")
+    srt: str = Field(max_length=5 * 1024**2)
+    base_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_version: int = Field(ge=0)
+
+
+class ItemName(BaseModel):
+    """User-visible library name, never interpreted as a path."""
+
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(min_length=1, max_length=120)
+
+
+class PurgeConfirmation(BaseModel):
+    """Require the item's exact name before permanent removal from Trash."""
+
+    model_config = ConfigDict(extra="forbid")
+    confirmation: str = Field(max_length=120)

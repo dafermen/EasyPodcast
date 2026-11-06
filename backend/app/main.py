@@ -3,6 +3,7 @@
 import asyncio
 import hmac
 import shutil
+import sqlite3
 import time
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -15,9 +16,11 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from . import library
 from .config import settings
 from .jobs import ACTIVE, make_job, store
+from .library_routes import attach
 from .media import ROOT, capabilities, local_background, normalize_image, validate_audio
 from .models import Design, DraftRequest, PreviewRequest, SubtitleEdit, TemplateRequest, TranscriptionOptions
 from .subtitles import parse_srt
+from .transfers import TransferManager
 from .uploads import receive_files
 
 
@@ -26,12 +29,16 @@ async def lifespan(app):
     """Start the store and compute capabilities at startup; close resources during shutdown."""
     store.start()
     app.state.upload_slot = asyncio.Semaphore(1)
+    app.state.bundle_slot = asyncio.Semaphore(1)
+    app.state.transfers = TransferManager(store.root)
+    store.transfer_cleanup = app.state.transfers.clean
     app.state.capabilities = await asyncio.to_thread(capabilities)
     yield
     await asyncio.to_thread(store.close)
+    app.state.transfers.clean(force=True)
 
 
-app = FastAPI(title="EasyPodcast", version="0.5.0", lifespan=lifespan)
+app = FastAPI(title="EasyPodcast", version="0.6.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
 
 
@@ -56,6 +63,9 @@ class RequestGuard:
         total = 0
         limit = settings.max_audio_bytes + settings.max_srt_bytes + settings.max_image_bytes * 2 + 1024**2
 
+        if scope.get("path") == "/api/library/import":
+            limit = settings.max_bundle_bytes
+
         async def bounded_receive():
             """Count streamed ASGI body bytes and enforce the total upload budget."""
             nonlocal total
@@ -77,10 +87,19 @@ async def invalid(request, exc):
     return JSONResponse({"detail": str(exc)}, status_code=422)
 
 
+@app.exception_handler(OSError)
+@app.exception_handler(sqlite3.Error)
+async def storage_failure(request, exc):
+    """Report local storage failures without returning private paths or raw OS/SQLite errors."""
+    return JSONResponse(
+        {"detail": "Local storage operation failed. Check free space and library access."}, status_code=507
+    )
+
+
 @app.get("/api/health")
 def health():
     """Expose service liveness and version without secrets."""
-    return {"status": "ok", "version": "0.5.0"}
+    return {"status": "ok", "version": "0.6.0"}
 
 
 @app.get("/api/capabilities")
@@ -289,7 +308,9 @@ def approve_preview(job=Depends(get_job)):
 
 
 def check_render(job):
-    """Enforce dependencies, subtitle/background approval, trim permission and disk budget."""
+    """Enforce dependencies, pending caption recovery, approvals and disk budgets."""
+    if job.subtitle_draft_available:
+        raise HTTPException(409, "Save or discard the subtitle recovery draft before rendering.")
     if not job.cues or not job.subtitles_approved:
         raise HTTPException(409, "Genera y revisa los subtítulos antes de renderizar.")
     if not capabilities()["render_ready"]:
@@ -433,9 +454,9 @@ def subtitles(job=Depends(get_job)):
             raise HTTPException(409, "Espera a que termine la operación activa.")
         if not job.cues:
             raise HTTPException(409, "Aún no hay subtítulos disponibles.")
-        path = job.path / ("generated.srt" if job.subtitle_source == "generate" else "original.srt")
+        state = library.caption_state(job)
         return {
-            "srt": path.read_text(encoding="utf-8-sig"),
+            **state,
             "word_timestamps": any(c.words for c in job.cues),
             "cues": [{"start": c.start, "end": c.end, "text": c.text} for c in job.cues],
         }
@@ -450,9 +471,23 @@ def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
     with store.lock:
         editable(job)
         path = job.path / ("generated.srt" if job.subtitle_source == "generate" else "original.srt")
+        if body.base_digest is not None:
+            state = library.caption_state(job)
+            if body.base_digest != state["base_digest"] or body.base_version != state["base_version"]:
+                raise HTTPException(
+                    409, "Saved subtitles changed. Reload them before saving these corrections."
+                )
         if path.exists() and path.read_text(encoding="utf-8-sig") == body.srt:
+            if job.project_id and not job.archive_error:
+                library.clear_caption_draft(job.project_id)
+                job.subtitle_draft_available = False
             return job.public()
-        path.write_text(body.srt, encoding="utf-8")
+        partial = path.with_suffix(".srt.partial")
+        try:
+            partial.write_text(body.srt, encoding="utf-8")
+            partial.replace(path)
+        finally:
+            partial.unlink(missing_ok=True)
         job.cues = cues
         job.warnings = warnings + [
             "SRT editado: se desactiva resaltado por palabra para no usar tiempos desactualizados."
@@ -461,6 +496,9 @@ def edit_subtitles(body: SubtitleEdit, job=Depends(get_job)):
         job.artifacts.add("subtitles")
         store.invalidate(job)
         store.checkpoint(job)
+        if job.project_id and not job.archive_error:
+            library.clear_caption_draft(job.project_id)
+            job.subtitle_draft_available = False
         return job.public()
 
 
@@ -469,6 +507,8 @@ def approve_subtitles(job=Depends(get_job)):
     """Approve generated or edited cues so the user can proceed to design."""
     with store.lock:
         editable(job)
+        if job.subtitle_draft_available:
+            raise HTTPException(409, "Save or discard the subtitle recovery draft before rendering.")
         if not job.cues:
             raise HTTPException(409, "Aún no hay subtítulos para revisar.")
         job.subtitles_approved = True
@@ -538,6 +578,7 @@ def open_project(identifier: str, request: Request):
         )
         if existing and not duplicate:
             record = library.project(identifier)
+            existing.subtitle_draft_available = bool(record["subtitle_draft"])
             if record["draft"] and existing.state not in ACTIVE:
                 editable(existing)
                 recovered = Design.model_validate_json(record["draft"])
@@ -619,6 +660,8 @@ def preflight(job=Depends(get_job)):
     with store.lock:
         return inspect(job)
 
+
+attach(app, get_job, editable)
 
 frontend = ROOT / "frontend" / "dist"
 if frontend.is_dir():

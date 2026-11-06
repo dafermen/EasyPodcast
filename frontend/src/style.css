@@ -1123,3 +1123,48 @@ footer {
 .logo-resize {
   transform: translate(-50%, -50%);
 }
+/* Library administration keeps large transfers on disk and controls usable on small screens. */
+.library-tools {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #627084);
+  border-radius: 14px;
+}
+.library-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.library-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0;
+  max-height: 32rem;
+  overflow-y: auto;
+}
+.library-admin-list article,
+.import-review,
+.library-confirm,
+.trash-item {
+  padding: 1rem;
+  border: 1px solid var(--line, #627084);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.library-admin-list article > .note {
+  display: block;
+  margin: 0.5rem 0;
+}
+.library-confirm {
+  margin-top: 1rem;
+  border-color: #38bdf8;
+}
+button.danger {
+  background: #9f263b;
+  color: white;
+}
+.library-tools input[type="file"] {
+  max-width: 100%;
+}

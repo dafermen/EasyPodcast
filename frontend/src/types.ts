@@ -104,6 +104,8 @@ export interface Job {
   artifacts: string[];
   expires_at: string;
   subtitle_source: "upload" | "generate";
+  /** Pending raw caption recovery must be saved or discarded before rendering. */
+  subtitle_draft_available?: boolean;
   subtitles_ready: boolean;
   subtitles_approved: boolean;
   word_timestamps: boolean;

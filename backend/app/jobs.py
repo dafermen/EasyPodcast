@@ -51,6 +51,7 @@ class Job:
     transcription_options: TranscriptionOptions = field(default_factory=TranscriptionOptions)
     project_id: str | None = None
     archive_error: str | None = None
+    subtitle_draft_available: bool = False
 
     def public(self):
         """Return the token-free job snapshot exposed by status polling."""
@@ -58,6 +59,7 @@ class Job:
             "id": self.id,
             "project_id": self.project_id,
             "archive_error": self.archive_error,
+            "subtitle_draft_available": self.subtitle_draft_available,
             "state": self.state,
             "phase": self.phase,
             "progress": self.progress,
@@ -265,6 +267,9 @@ class Store:
         """Periodically request cleanup until shutdown is signalled."""
         while not self.stop.wait(2):
             self.cleanup()
+            cleanup = getattr(self, "transfer_cleanup", None)
+            if cleanup:
+                cleanup()
 
     def cleanup(self):
         """Cancel overdue active jobs and remove expired/deleted idle jobs without active readers."""

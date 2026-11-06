@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 · 2026-11-05 · Portable library and subtitle recovery
+
+- Complete project ZIP exports and whole-library backups with templates and Trash.
+- Bounded streaming import, checksum/media validation, separate review/confirmation and new-copy installation with rollback.
+- Search, recent/name/size ordering, independent library names, recoverable Trash and exact-name permanent deletion.
+- Active/Trash/database storage reporting and free-disk feedback.
+- Raw subtitle autosave/recovery, saved-SRT digest and edit-generation conflict protection, explicit save/discard and render gates.
+- Shared draft flush before navigation, project switching, close and backup; English/Spanish controls and English source/user/developer documentation.
+
 ## 0.5.0 · 2026-11-03 · Durable studio tools
 
 - Local SQLite project library with covers/history, reopen/duplicate and recovery after restart.

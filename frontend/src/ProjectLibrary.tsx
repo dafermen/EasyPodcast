@@ -1,3 +1,5 @@
+import { LibraryTools, storageSize } from "./LibraryTools";
+import { registerDraft } from "./drafts";
 import { useEffect, useState, useRef } from "react";
 import { api } from "./api";
 import { t, getLocale } from "./i18n";
@@ -9,9 +11,11 @@ export interface ProjectSummary {
   updated: number;
   state: string;
   has_draft: boolean;
+  bytes?: number;
 }
 /** Resume at the latest review/export stage that still has valid artifacts and approvals. */
 export function resumeStep(job: Job) {
+  if (job.subtitle_draft_available) return 0;
   if (!job.subtitles_approved) return 0;
   if (job.preview_approved && job.artifacts.includes("video")) return 3;
   if (job.background_approved && job.artifacts.includes("preview")) return 2;
@@ -23,12 +27,16 @@ export function ProjectLibrary({
   disabled,
   revision = 0,
   beforeOpen,
+  onTrashed,
 }: {
   onOpen: (job: Job & { token: string }) => void;
   disabled: boolean;
   revision?: number;
   beforeOpen?: () => Promise<void>;
+  onTrashed?: (id: string) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("updated");
   const details = useRef<HTMLDetailsElement>(null);
   const [items, setItems] = useState<ProjectSummary[]>([]);
   const [error, setError] = useState("");
@@ -87,38 +95,72 @@ export function ProjectLibrary({
         {t("Refresh library")}
       </button>
       {error && <p role="alert">{t(error)}</p>}
+      <label>
+        {t("Search projects")}
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      <label>
+        {t("Sort projects")}
+        <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="updated">{t("Recently updated")}</option>
+          <option value="title">{t("Name")}</option>
+          <option value="bytes">{t("Largest first")}</option>
+        </select>
+      </label>
+      <LibraryTools
+        projects={items}
+        beforeAction={beforeOpen}
+        onTrashed={onTrashed}
+        disabled={disabled || working}
+        onChanged={() => setReload((n) => n + 1)}
+      />
       <div className="project-grid">
-        {items.map((item) => (
-          <article key={item.id} className="project-card">
-            <img
-              src={`/api/projects/${item.id}/thumbnail`}
-              alt=""
-              loading="lazy"
-            />
-            <div>
-              <strong>{item.title}</strong>
-              <p className="note">
-                {new Date(item.updated * 1000).toLocaleString(
-                  getLocale() === "en" ? "en-US" : "es-ES",
-                )}{" "}
-                · {t(item.state)}
-                {item.has_draft ? ` · ${t("Recovery draft available")}` : ""}
-              </p>
-              <button
-                disabled={disabled || working}
-                onClick={() => open(item.id)}
-              >
-                {t("Continue project")}
-              </button>{" "}
-              <button
-                disabled={disabled || working}
-                onClick={() => open(item.id, true)}
-              >
-                {t("Duplicate")}
-              </button>
-            </div>
-          </article>
-        ))}
+        {items
+          .filter((item) =>
+            item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+          )
+          .sort((a, b) =>
+            sort === "title"
+              ? a.title.localeCompare(b.title)
+              : sort === "bytes"
+                ? (b.bytes || 0) - (a.bytes || 0)
+                : b.updated - a.updated,
+          )
+          .map((item) => (
+            <article key={item.id} className="project-card">
+              <img
+                src={`/api/projects/${item.id}/thumbnail`}
+                alt=""
+                loading="lazy"
+              />
+              <div>
+                <strong>{item.title}</strong>
+                <p className="note">
+                  {new Date(item.updated * 1000).toLocaleString(
+                    getLocale() === "en" ? "en-US" : "es-ES",
+                  )}{" "}
+                  · {t(item.state)} · {storageSize(item.bytes)}
+                  {item.has_draft ? ` · ${t("Recovery draft available")}` : ""}
+                </p>
+                <button
+                  disabled={disabled || working}
+                  onClick={() => open(item.id)}
+                >
+                  {t("Continue project")}
+                </button>{" "}
+                <button
+                  disabled={disabled || working}
+                  onClick={() => open(item.id, true)}
+                >
+                  {t("Duplicate")}
+                </button>
+              </div>
+            </article>
+          ))}
       </div>
       {!items.length && (
         <p>{t("Your saved episodes will appear here after upload.")}</p>
@@ -155,6 +197,19 @@ export function DraftAutosave({
         keepalive: true,
       }).catch(() => {});
     };
+    const unregister = registerDraft(async () => {
+      await api("/library/session", undefined, "POST");
+      const result = await api<{ saved: boolean }>(
+        `/projects/${job.project_id}/draft`,
+        undefined,
+        "PUT",
+        JSON.stringify({ design, base: job.config }),
+      );
+      if (!result.saved)
+        throw new Error(
+          "A newer design is saved. Review before recovering this draft.",
+        );
+    });
     window.addEventListener("pagehide", flush);
     const timer = setTimeout(() => {
       api("/library/session", undefined, "POST")
@@ -183,6 +238,7 @@ export function DraftAutosave({
     }, 900);
     return () => {
       current = false;
+      unregister();
       clearTimeout(timer);
       window.removeEventListener("pagehide", flush);
     };

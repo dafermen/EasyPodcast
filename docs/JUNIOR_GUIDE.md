@@ -71,3 +71,18 @@ Read library.py next to jobs.py. A live Job contains things that cannot be seria
 A recovery draft is distinct from the committed Design. Its base version prevents an old network request from overwriting a newer explicit save. DraftAutosave depends on serialized content versions, not each new object returned by polling; otherwise an identical status refresh would resubmit the draft repeatedly. Preflight similarly checks meaningful state changes rather than every polling tick.
 
 Follow frameSize/canvasDelta/logoBox in CanvasEditor.tsx to see coordinate transforms: a 50-pixel pointer move on a half-size canvas is 100 output pixels. Compare those results with the FFmpeg graph and ASS resolution. Read SubtitleTimeline.tsx for parsing cue intervals, seeking an HTML audio element and writing corrected SRT back to the existing validated API.
+
+## Follow a portable project from browser to disk
+
+1. Start at LibraryTools.tsx: preparing a download calls a JSON endpoint; clicking the returned anchor streams a file through the browser. It does not allocate the MP4/ZIP as a JavaScript Blob.
+2. Read library_routes.attach: the router requires a local HttpOnly session and shares the existing Origin guard. A semaphore limits expensive package work; a ticket identifies private staging, not a filesystem path.
+3. Read packages.build: freeze archived files under a lock, then release the lock before hashing and writing the ZIP. Hard links keep old file versions alive when a checkpoint atomically replaces the library file. Copying is the cross-filesystem fallback.
+4. Read inspect_package: a filename is untrusted input. Fixed UUID paths, filename allowlists, byte budgets, hashes and real media inspection are separate checks. A checksum proves the bytes match the manifest; it does not prove who created them.
+5. Read install: allocate fresh identities inside a transaction. Record every newly created directory so an exception removes only those incomplete copies. Existing projects remain untouched.
+6. Read transfers.TransferManager: a lease prevents expiry from deleting a file while another request consumes it. Expiry and cancellation clean temporary staging; neither prunes the durable library.
+
+## Understand subtitle recovery concurrency
+
+The textarea can temporarily contain invalid SRT. A recovery draft stores this raw string; parsed cues remain unchanged until explicit save succeeds. The saved SRT SHA-256 identifies the baseline content. The integer generation changes on save/discard, so a delayed request cannot resurrect a discarded draft even when the saved text has not changed. This is optimistic concurrency: reject stale work instead of silently overwriting newer work. drafts.ts registers save functions from mounted editors and awaits them before switching projects. Page-close requests remain best-effort; an acknowledged save is the reliable evidence.
+
+Try the isolated test_portable.py fixtures before modifying protocol rules. Add a malformed archive case, verify it returns a safe rejection and confirm the existing library count/media are unchanged. Never point destructive tests at a user's real library.

@@ -1,3 +1,4 @@
+import { flushDrafts } from "./drafts";
 import {
   ProjectLibrary,
   resumeStep,
@@ -250,7 +251,11 @@ export function App() {
               className={index === step ? "step current" : "step"}
               aria-current={index === step ? "step" : undefined}
               disabled={index > 0 && (!job || job.subtitles_approved === false)}
-              onClick={() => setStep(index)}
+              onClick={() => {
+                void flushDrafts()
+                  .then(() => setStep(index))
+                  .catch((e) => setError(e.message));
+              }}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
               {label}
@@ -260,15 +265,14 @@ export function App() {
         <ProjectLibrary
           disabled={busy || active}
           revision={libraryRevision}
-          beforeOpen={async () => {
-            if (job?.project_id && design && dirty) {
-              await api("/library/session", undefined, "POST");
-              await api(
-                `/projects/${job.project_id}/draft`,
-                undefined,
-                "PUT",
-                JSON.stringify({ design, base: job.config }),
-              );
+          beforeOpen={flushDrafts}
+          onTrashed={(id) => {
+            if (job?.project_id === id) {
+              setJob(null);
+              setToken("");
+              setDesign(null);
+              setDirty(false);
+              setStep(0);
             }
           }}
           onOpen={(result) => {
@@ -280,7 +284,7 @@ export function App() {
             setSavedDesign(false);
             setDesignMethod("manual");
             setImportedDesign(false);
-            setEditingSubtitles(false);
+            setEditingSubtitles(!!result.subtitle_draft_available);
             setStart(0);
             setRevision((n) => n + 1);
             setStep(resumeStep(result));
@@ -540,7 +544,11 @@ export function App() {
                 />
                 <button
                   disabled={disabled}
-                  onClick={() => setEditingSubtitles((v) => !v)}
+                  onClick={() => {
+                    void flushDrafts()
+                      .then(() => setEditingSubtitles((v) => !v))
+                      .catch((e) => setError(e.message));
+                  }}
                 >
                   {t("Review or edit subtitles")}
                 </button>
@@ -1111,6 +1119,7 @@ export function App() {
                   disabled={busy}
                   onClick={() =>
                     perform(async () => {
+                      await flushDrafts();
                       await api(`/jobs/${job.id}`, token, "DELETE");
                       setJob(null);
                       setToken("");
@@ -1168,7 +1177,7 @@ export function App() {
       <footer>
         {" "}
         {t("Hecho para escuchar. Diseñado para compartir.")}{" "}
-        <span>{t("EasyPodcast · 0.5.0")}</span>
+        <span>{t("EasyPodcast · 0.6.0")}</span>
       </footer>
     </div>
   );
